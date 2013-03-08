@@ -10,66 +10,91 @@
 template <unsigned int blockSize, unsigned int layerActivationFunction>
 __global__ void runGpuKernel(unsigned int neuronInputCount, fann_type * inputArray, fann_type * weightsArray, fann_type *sumArray, fann_type * outputArray, fann_type layerSteepness)
 {
+  __shared__ fann_type local[blockSize];
   unsigned int tid = threadIdx.x;
-  unsigned int i = blockIdx.x * blockSize + threadIdx.x;
-  unsigned int gridSize = blockSize * gridDim.x;
 
-  __shared__ fann_type local[256];
+  fann_type l_summ = 0;
+
   if(tid < neuronInputCount)
   {
-    local[tid] = (fann_type) (inputArray[tid] * weightsArray[neuronInputCount * blockIdx.x + tid]);
+    l_summ = (fann_type) (inputArray[tid] * weightsArray[neuronInputCount * blockIdx.x + tid]);
+    if((tid + blockSize) < neuronInputCount)
+      l_summ += (fann_type) (inputArray[tid + blockSize] * weightsArray[neuronInputCount * blockIdx.x + tid + blockSize]);
   }
-  else
-    local[tid] = 0;
+
+  local[tid] = l_summ;
   __syncthreads();
 
-  for (unsigned int s = blockDim.x / 2; s>32; s>>=1)
+  // do reduction in shared mem
+  if (blockSize >= 512)
   {
-    if (tid < s)
+    if (tid < 256)
     {
-      local[tid] += local[tid + s];
+      local[tid] = l_summ = l_summ + local[tid + 256];
     }
+
     __syncthreads();
   }
-  
+
+  if (blockSize >= 256)
+  {
+    if (tid < 128)
+    {
+      local[tid] = l_summ = l_summ + local[tid + 128];
+    }
+
+    __syncthreads();
+  }
+
+  if (blockSize >= 128)
+  {
+    if (tid <  64)
+    {
+      local[tid] = l_summ = l_summ + local[tid + 64];
+    }
+
+    __syncthreads();
+  }
+
+
   if (tid < 32)
   {
     // now that we are using warp-synchronous programming (below)
     // we need to declare our shared memory volatile so that the compiler
     // doesn't reorder stores to it and induce incorrect behavior.
     volatile fann_type *smem = local;
-    
+
     if (blockSize >=  64)
     {
-      smem[tid] += smem[tid + 32];
+      smem[tid] = l_summ = l_summ + local[tid + 32];
     }
-    
+
     if (blockSize >=  32)
     {
-      smem[tid] += smem[tid + 16];
+      smem[tid] = l_summ = l_summ + local[tid + 16];
     }
-    
+
     if (blockSize >=  16)
     {
-      smem[tid] += smem[tid +  8];
+      smem[tid] = l_summ = l_summ + local[tid + 8];
     }
-    
+
     if (blockSize >=   8)
     {
-      smem[tid] += smem[tid +  4];
+      smem[tid] = l_summ = l_summ + local[tid + 4];
     }
-    
+
     if (blockSize >=   4)
     {
-      smem[tid] += smem[tid +  2];
+      smem[tid] = l_summ = l_summ + local[tid + 2];
     }
-    
+
     if (blockSize >=   2)
     {
-      smem[tid] += smem[tid +  1];
+      smem[tid] = l_summ = l_summ + local[tid + 1];
     }
   }
-  
+
   if (tid == 0)
   {
     fann_type neuron_sum = local[0];
@@ -140,7 +165,7 @@ pow2roundup (int x)
 
 void runGpu(unsigned int neuronInputCount, fann_type * inputArray, fann_type * weightsArray, fann_type *sumArray, fann_type * outputArray, fann_type layerSteepness, unsigned int layerActivationFunction, unsigned int neuronCount)
 {
-  unsigned int threadsCount = pow2roundup(neuronInputCount);
+  unsigned int threadsCount = pow2roundup(neuronInputCount) / 2;
   if(threadsCount < 32)
     threadsCount = 32;
   else
@@ -189,13 +214,13 @@ void run(struct fann * ann, gpuData &data)
 fann_type * fann_run1(struct fann * ann, fann_type * input)
 {
   check(ann);
-  
+
   gpuData data;
   prepareData(ann, input, data);
   for(int i = 0; i < 1e6; ++i)
     run(ann, data);
   unPrepareAndFreeData(data, ann);
-  
+
   fann_type *output = ann->output;
   unsigned int num_output = ann->num_output;
   fann_neuron *neurons = (ann->last_layer - 1)->first_neuron;
