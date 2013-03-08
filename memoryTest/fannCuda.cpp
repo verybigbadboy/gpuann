@@ -5,6 +5,8 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
+#include <string>
+
 template <unsigned int blockSize, unsigned int layerActivationFunction>
 __global__ void runGpuKernel(unsigned int neuronInputCount, fann_type * inputArray, fann_type * weightsArray, fann_type *sumArray, fann_type * outputArray, fann_type layerSteepness)
 {
@@ -72,7 +74,7 @@ __global__ void runGpuKernel(unsigned int neuronInputCount, fann_type * inputArr
   {
     fann_type neuron_sum = local[0];
     neuron_sum *= layerSteepness;
-    
+
     fann_type max_sum = 150 / layerSteepness;
     if(neuron_sum > max_sum)
       neuron_sum = max_sum;
@@ -87,37 +89,73 @@ __global__ void runGpuKernel(unsigned int neuronInputCount, fann_type * inputArr
 }
 
 
-#define runGpuCase(X) case X: \
+#define runGpuActivatedCase(X) case X: \
   runGpuKernel <blockSize, X> <<<dimGrid, dimBlock>>>(neuronInputCount, inputArray, weightsArray, sumArray, outputArray, layerSteepness); \
   break;
 
 template <unsigned int blockSize>
-void runGpu(unsigned int neuronInputCount, fann_type * inputArray, fann_type * weightsArray, fann_type *sumArray, fann_type * outputArray, fann_type layerSteepness, unsigned int layerActivationFunction, unsigned int neuronCount)
+void runGpuActivated(unsigned int neuronInputCount, fann_type * inputArray, fann_type * weightsArray, fann_type *sumArray, fann_type * outputArray, fann_type layerSteepness, unsigned int layerActivationFunction, unsigned int neuronCount)
 {
-  unsigned int threads = 256;
-  dim3 dimBlock(threads, 1, 1);
+  dim3 dimBlock(blockSize, 1, 1);
   dim3 dimGrid(neuronCount, 1, 1);
 
   switch(layerActivationFunction)
   {
-    runGpuCase(0);
-    runGpuCase(1);
-    runGpuCase(2);
-    runGpuCase(3);
-    runGpuCase(4);
-    runGpuCase(5);
-    runGpuCase(6);
-    runGpuCase(7);
-    runGpuCase(8);
-    runGpuCase(9);
-    runGpuCase(10);
-    runGpuCase(11);
-    runGpuCase(12);
-    runGpuCase(13);
-    runGpuCase(14);
-    runGpuCase(15);
+    runGpuActivatedCase(0);
+    runGpuActivatedCase(1);
+    runGpuActivatedCase(2);
+    runGpuActivatedCase(3);
+    runGpuActivatedCase(4);
+    runGpuActivatedCase(5);
+    runGpuActivatedCase(6);
+    runGpuActivatedCase(7);
+    runGpuActivatedCase(8);
+    runGpuActivatedCase(9);
+    runGpuActivatedCase(10);
+    runGpuActivatedCase(11);
+    runGpuActivatedCase(12);
+    runGpuActivatedCase(13);
+    runGpuActivatedCase(14);
+    runGpuActivatedCase(15);
   }
 }
+
+inline int
+pow2roundup (int x)
+{
+  if (x < 0)
+    return 0;
+  --x;
+  x |= x >> 1;
+  x |= x >> 2;
+  x |= x >> 4;
+  x |= x >> 8;
+  x |= x >> 16;
+  return x+1;
+}
+
+#define runGpuThreadsCase(X) case X: \
+  runGpuActivated <X> (neuronInputCount, inputArray, weightsArray, sumArray, outputArray, layerSteepness, layerActivationFunction, neuronCount); \
+  break;
+
+void runGpu(unsigned int neuronInputCount, fann_type * inputArray, fann_type * weightsArray, fann_type *sumArray, fann_type * outputArray, fann_type layerSteepness, unsigned int layerActivationFunction, unsigned int neuronCount)
+{
+  unsigned int threadsCount = pow2roundup(neuronInputCount);
+  if(threadsCount < 32)
+    threadsCount = 32;
+  else
+    if(threadsCount > 256)
+      throw std::string("too many inputs");
+
+  switch (threadsCount)
+  {
+    runGpuThreadsCase(32);
+    runGpuThreadsCase(64);
+    runGpuThreadsCase(128);
+    runGpuThreadsCase(256);
+  }
+}
+
 
 void run(struct fann * ann, gpuData &data)
 {
@@ -136,14 +174,14 @@ void run(struct fann * ann, gpuData &data)
     unsigned int currentNeuronArrayShift = neuron_it - neuronsArray;
     unsigned int weightsArrayShift = neuron_it->first_con;
 
-    runGpu<256> (layerNeuronInputCount
-               , data.d_valuesArray + inputNeuronArrayShift
-               , data.d_weightsArray + weightsArrayShift
-               , data.d_sumArray + currentNeuronArrayShift
-               , data.d_valuesArray + currentNeuronArrayShift
-               , layerSteepness
-               , layerActivationFunction
-               , last_neuron - neuron_it);
+    runGpu(layerNeuronInputCount
+        , data.d_valuesArray + inputNeuronArrayShift
+        , data.d_weightsArray + weightsArrayShift
+        , data.d_sumArray + currentNeuronArrayShift
+        , data.d_valuesArray + currentNeuronArrayShift
+        , layerSteepness
+        , layerActivationFunction
+        , last_neuron - neuron_it);
   }
 }
 
