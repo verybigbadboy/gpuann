@@ -167,14 +167,17 @@ pow2roundup (int x)
 void runGpu(unsigned int neuronInputCount, fann_type * inputArray, fann_type * weightsArray, fann_type *sumArray, fann_type * outputArray, fann_type layerSteepness, unsigned int layerActivationFunction, unsigned int neuronCount)
 {
   unsigned int threadsCount = pow2roundup(neuronInputCount) / 2;
-  if(threadsCount < 32)
-    threadsCount = 32;
+  if(threadsCount < 4)
+    threadsCount = 4;
   else
     if(threadsCount > 256)
       throw std::string("too many inputs");
 
   switch (threadsCount)
   {
+    runGpuThreadsCase(4);
+    runGpuThreadsCase(8);
+    runGpuThreadsCase(16);
     runGpuThreadsCase(32);
     runGpuThreadsCase(64);
     runGpuThreadsCase(128);
