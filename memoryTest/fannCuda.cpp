@@ -96,8 +96,6 @@ __global__ void runGpuKernel(unsigned int neuronInputCount, fann_type * inputArr
     }
   }
 
-  __syncthreads();
-
   if (tid == 0)
   {
     fann_type neuron_sum = local[0];
