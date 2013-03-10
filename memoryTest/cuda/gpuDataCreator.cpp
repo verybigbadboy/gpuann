@@ -56,6 +56,9 @@ void prepareData(struct fann * ann, fann_type * input, gpuData &data)
 
   unsigned int weightsCount = ((ann->last_layer - 1)->last_neuron - 1)->last_con;
 
+  /*for(int i = 0; i < weightsCount; ++i)
+    data.weightsArray[i] = 1;*/
+
   cudaMalloc((void **)&(data.d_sumArray),     neuronCount * sizeof(fann_type));
   cudaMalloc((void **)&(data.d_valuesArray),  neuronCount * sizeof(fann_type));
   cudaMalloc((void **)&(data.d_weightsArray), weightsCount * sizeof(fann_type));

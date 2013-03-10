@@ -11,6 +11,7 @@ template <unsigned int blockSize, unsigned int layerActivationFunction>
 __global__ void runGpuKernel(unsigned int neuronInputCount, fann_type * inputArray, fann_type * weightsArray, fann_type *sumArray, fann_type * outputArray, fann_type layerSteepness)
 {
   __shared__ fann_type local[blockSize];
+
   unsigned int tid = threadIdx.x;
 
   fann_type l_summ = 0;
@@ -66,34 +67,36 @@ __global__ void runGpuKernel(unsigned int neuronInputCount, fann_type * inputArr
 
     if (blockSize >=  64)
     {
-      smem[tid] = l_summ = l_summ + local[tid + 32];
+      smem[tid] = l_summ = l_summ + smem[tid + 32];
     }
 
     if (blockSize >=  32)
     {
-      smem[tid] = l_summ = l_summ + local[tid + 16];
+      smem[tid] = l_summ = l_summ + smem[tid + 16];
     }
 
     if (blockSize >=  16)
     {
-      smem[tid] = l_summ = l_summ + local[tid + 8];
+      smem[tid] = l_summ = l_summ + smem[tid + 8];
     }
 
     if (blockSize >=   8)
     {
-      smem[tid] = l_summ = l_summ + local[tid + 4];
+      smem[tid] = l_summ = l_summ + smem[tid + 4];
     }
 
     if (blockSize >=   4)
     {
-      smem[tid] = l_summ = l_summ + local[tid + 2];
+      smem[tid] = l_summ = l_summ + smem[tid + 2];
     }
 
     if (blockSize >=   2)
     {
-      smem[tid] = l_summ = l_summ + local[tid + 1];
+      smem[tid] = l_summ = l_summ + smem[tid + 1];
     }
   }
+
+  __syncthreads();
 
   if (tid == 0)
   {
@@ -122,7 +125,7 @@ template <unsigned int blockSize>
 void runGpuActivated(unsigned int neuronInputCount, fann_type * inputArray, fann_type * weightsArray, fann_type *sumArray, fann_type * outputArray, fann_type layerSteepness, unsigned int layerActivationFunction, unsigned int neuronCount)
 {
   dim3 dimBlock(blockSize, 1, 1);
-  dim3 dimGrid(neuronCount, 1, 1);
+  dim3 dimGrid(neuronCount - 1, 1, 1);
 
   switch(layerActivationFunction)
   {
@@ -186,7 +189,8 @@ void run(struct fann * ann, gpuData &data)
 {
   struct fann_neuron *neuronsArray = ann->first_layer->first_neuron;
   struct fann_layer *last_layer = ann->last_layer;
-  
+
+
   for(struct fann_layer *layer_it = ann->first_layer + 1; layer_it != last_layer; layer_it++)
   {
     struct fann_neuron * last_neuron = layer_it->last_neuron;
@@ -200,10 +204,10 @@ void run(struct fann * ann, gpuData &data)
     unsigned int weightsArrayShift = neuron_it->first_con;
 
     runGpu(layerNeuronInputCount
-        , data.d_valuesArray + inputNeuronArrayShift
-        , data.d_weightsArray + weightsArrayShift
-        , data.d_sumArray + currentNeuronArrayShift
-        , data.d_valuesArray + currentNeuronArrayShift
+        , &(data.d_valuesArray[inputNeuronArrayShift])
+        , &(data.d_weightsArray[weightsArrayShift])
+        , &(data.d_sumArray[currentNeuronArrayShift])
+        , &(data.d_valuesArray[currentNeuronArrayShift])
         , layerSteepness
         , layerActivationFunction
         , last_neuron - neuron_it);
