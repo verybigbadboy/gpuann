@@ -2,6 +2,7 @@
 #include "floatfann.h"
 #include "fannCuda.h"
 #include "common.h"
+#include <cuda_runtime_api.h>
 
 void printann(struct fann *ann)
 {
@@ -81,5 +82,7 @@ int main()
   //runTests(ann);
 
   fann_destroy(ann);
+
+  cudaDeviceReset();
   return 0;
 }

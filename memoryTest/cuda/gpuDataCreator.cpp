@@ -35,7 +35,7 @@ void prepareData(struct fann * ann, fann_type * input, gpuData &data)
 
   for(; neuron_it != last_neuron; neuron_it++)
   {
-    unsigned int currentNeuronShift  = neuron_it - neuronsArray;
+    __int64 currentNeuronShift  = neuron_it - neuronsArray;
     data.valuesArray[currentNeuronShift] = neuron_it->value;
     data.sumArray[currentNeuronShift]    = neuron_it->sum;
   }
@@ -46,7 +46,7 @@ void prepareData(struct fann * ann, fann_type * input, gpuData &data)
     struct fann_neuron * neuron_it   = layer_it->first_neuron;
     for(; neuron_it != last_neuron; neuron_it++)
     {
-      unsigned int currentNeuronShift  = neuron_it - neuronsArray;
+      __int64 currentNeuronShift  = neuron_it - neuronsArray;
       if(neuron_it->last_con - neuron_it->first_con == 0)
         neuron_it->value = 1;
       data.valuesArray[currentNeuronShift] = neuron_it->value;
@@ -91,7 +91,7 @@ void unPrepareAndFreeData(gpuData &data, fann *ann)
     struct fann_neuron * neuron_it   = layer_it->first_neuron;
     for(; neuron_it != last_neuron; neuron_it++)
     {
-      unsigned int currentNeuronShift  = neuron_it - neuronsArray;
+      __int64 currentNeuronShift  = neuron_it - neuronsArray;
       neuron_it->value = data.valuesArray[currentNeuronShift];
       neuron_it->sum = data.sumArray[currentNeuronShift];
     }

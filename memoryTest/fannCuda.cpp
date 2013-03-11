@@ -8,7 +8,7 @@
 #include <string>
 
 template <unsigned int blockSize, unsigned int layerActivationFunction>
-__global__ void runGpuKernel(unsigned int neuronInputCount, fann_type * inputArray, fann_type * weightsArray, fann_type *sumArray, fann_type * outputArray, fann_type layerSteepness)
+__global__ void runGpuKernel(const unsigned int neuronInputCount, const fann_type * inputArray, const fann_type * weightsArray, fann_type *sumArray, fann_type * outputArray, const fann_type layerSteepness)
 {
   __shared__ fann_type local[blockSize];
 
@@ -146,8 +146,7 @@ void runGpuActivated(unsigned int neuronInputCount, fann_type * inputArray, fann
   }
 }
 
-inline int
-pow2roundup (int x)
+inline int pow2roundup (int x)
 {
   if (x < 0)
     return 0;
@@ -200,9 +199,9 @@ void run(struct fann * ann, gpuData &data)
     fann_type    layerSteepness = neuron_it->activation_steepness;
     unsigned int layerActivationFunction = neuron_it->activation_function;
     unsigned int layerNeuronInputCount = neuron_it->last_con - neuron_it->first_con;
-    unsigned int inputNeuronArrayShift = (layer_it - 1)->first_neuron - neuronsArray;
-    unsigned int currentNeuronArrayShift = neuron_it - neuronsArray;
-    unsigned int weightsArrayShift = neuron_it->first_con;
+    __int64 inputNeuronArrayShift = (layer_it - 1)->first_neuron - neuronsArray;
+    __int64 currentNeuronArrayShift = neuron_it - neuronsArray;
+    __int64 weightsArrayShift = neuron_it->first_con;
 
     runGpu(layerNeuronInputCount
         , &(data.d_valuesArray[inputNeuronArrayShift])
