@@ -2,7 +2,7 @@
 #include <fann.h>
 #include <string>
 
-void check(struct fann * ann)
+void check(const fann * ann)
 {
   if(ann->network_type != FANN_NETTYPE_LAYER || ann->connection_rate < 1)
   {

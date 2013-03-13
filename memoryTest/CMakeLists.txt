@@ -6,7 +6,4 @@ include_directories(${CMAKE_SOURCE_DIR} ${INCLUDE_DIRECTORIES} /home/bad/project
 link_directories(/home/bad/projects/fann-code/build/src/)
 
 link_libraries(floatfann)
-CUDA_ADD_EXECUTABLE(memoryTest cuda/neuronsRunKernel.cpp fannCuda.cu cuda/gpuDataCreator.cpp cuda/neuralNetworkTypeCheck.cpp main.cu test.cpp)
-
-
-add_subdirectory(cuda)
+CUDA_ADD_EXECUTABLE(memoryTest gpuann.cpp base/gpuannDataCreator.cpp base/neuralNetworkTypeCheck.cpp kernels/straightforward/run.cu test.cpp)

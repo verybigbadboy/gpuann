@@ -2,12 +2,10 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#include <cuda.h>
-#include <drvapi_error_string.h>
-#include <builtin_types.h>
 #include <stdio.h>
-
-
+#include <cuda.h>
+#include <builtin_types.h>
+#include <common/cuda/drvapi_error_string.h>
 
 // Variables
 static CUdevice cuDevice;

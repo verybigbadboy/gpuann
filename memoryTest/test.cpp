@@ -1,7 +1,6 @@
 #include <stdio.h>
-#include "floatfann.h"
-#include "fannCuda.h"
-#include "common.h"
+#include <gpuann.h>
+#include <common/cuda/common.h>
 
 void printann(struct fann *ann)
 {
@@ -26,7 +25,7 @@ void runTest(struct fann *ann, fann_type * input, const char * testName)
   fann_type *calc_out;
   fann_type calc_out_gpu, calc_out_cpu;
 
-  calc_out = fann_run1(ann, input);
+  calc_out = gpuann_fann_run(ann, input);
   calc_out_gpu = calc_out[0];
 
   printf("GPU xor test (%f,%f) -> %f\n", input[0], input[1], calc_out[0]);
@@ -77,8 +76,8 @@ int main()
 
   struct fann *ann = fann_create_from_file("xor_float.net");
 
-  bench(ann);
-  //runTests(ann);
+  //bench(ann);
+  runTests(ann);
 
   fann_destroy(ann);
   return 0;
