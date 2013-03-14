@@ -3,19 +3,20 @@
 #include <cuda_runtime.h>
 
 template <unsigned int blockSize, unsigned int layerActivationFunction>
-__global__ void runGpuKernel(unsigned int neuronInputCount, fann_type * inputArray, fann_type * weightsArray, fann_type *sumArray, fann_type * outputArray, fann_type layerSteepness)
+__global__ void runGpuKernel(unsigned int neuronInputCount, fann_type * inputArray, fann_type * weightsArray, fann_type *sumArray, fann_type * outputArray, fann_type layerSteepness
+                            , unsigned int totalNeuronsCount, unsigned int totalWeightsCount)
 {
   __shared__ fann_type local[blockSize];
-  
+
   unsigned int tid = threadIdx.x;
-  
+
   fann_type l_summ = 0;
-  
+
   if(tid < neuronInputCount)
   {
-    l_summ = (fann_type) (inputArray[tid] * weightsArray[neuronInputCount * blockIdx.x + tid]);
+    l_summ = (fann_type) (inputArray[tid + totalNeuronsCount * blockIdx.y] * weightsArray[neuronInputCount * blockIdx.x + tid + totalWeightsCount * blockIdx.y]);
     if((tid + blockSize) < neuronInputCount)
-      l_summ += (fann_type) (inputArray[tid + blockSize] * weightsArray[neuronInputCount * blockIdx.x + tid + blockSize]);
+      l_summ += (fann_type) (inputArray[tid + blockSize + totalNeuronsCount * blockIdx.y] * weightsArray[neuronInputCount * blockIdx.x + tid + blockSize + totalWeightsCount * blockIdx.y]);
   }
   
   local[tid] = l_summ;
@@ -90,21 +91,21 @@ __global__ void runGpuKernel(unsigned int neuronInputCount, fann_type * inputArr
       smem[tid] = l_summ = l_summ + smem[tid + 1];
     }
   }
-  
+
   if (tid == 0)
   {
     fann_type neuron_sum = local[0];
     neuron_sum *= layerSteepness;
-    
+
     fann_type max_sum = 150 / layerSteepness;
     if(neuron_sum > max_sum)
       neuron_sum = max_sum;
     else
       if(neuron_sum < -max_sum)
         neuron_sum = -max_sum;
-      
-      sumArray[blockIdx.x] = neuron_sum;
-    
-    fann_activation_switch(layerActivationFunction, neuron_sum, outputArray[blockIdx.x]);
+
+      sumArray[blockIdx.x + totalNeuronsCount * blockIdx.y] = neuron_sum;
+
+    fann_activation_switch(layerActivationFunction, neuron_sum, outputArray[blockIdx.x + totalNeuronsCount * blockIdx.y]);
   }
 }

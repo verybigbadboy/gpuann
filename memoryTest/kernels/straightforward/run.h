@@ -3,6 +3,6 @@
 
 #include <base/gpuannData.h>
 
-fann_type * gpuann_fann_run_implementation(struct fann * ann, gpuann &data);
+void gpuann_fann_run_implementation(gpuann &data);
 
 #endif // KERNELS_STRAIGHTFORWARD_RUN_H

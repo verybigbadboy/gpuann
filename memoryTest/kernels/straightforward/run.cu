@@ -4,15 +4,15 @@
 #include <string>
 
 #define runGpuActivatedCase(X) case X: \
-runGpuKernel <blockSize, X> <<<dimGrid, dimBlock>>>(neuronInputCount, inputArray, weightsArray, sumArray, outputArray, layerSteepness); \
+runGpuKernel <blockSize, X> <<<dimGrid, dimBlock>>>(neuronInputCount, inputArray, weightsArray, sumArray, outputArray, layerSteepness, totalNeuronsCount, totalWeightsCount); \
 break;
 
 template <unsigned int blockSize>
-void runGpuActivated(unsigned int neuronInputCount, fann_type * inputArray, fann_type * weightsArray, fann_type *sumArray, fann_type * outputArray, fann_type layerSteepness, unsigned int layerActivationFunction, unsigned int neuronCount)
+void runGpuActivated(unsigned int neuronInputCount, fann_type * inputArray, fann_type * weightsArray, fann_type *sumArray, fann_type * outputArray, fann_type layerSteepness, unsigned int layerActivationFunction, unsigned int neuronCount, unsigned int instanceCount, unsigned int totalNeuronsCount, unsigned int totalWeightsCount)
 {
   dim3 dimBlock(blockSize, 1, 1);
-  dim3 dimGrid(neuronCount - 1, 1, 1);
-  
+  dim3 dimGrid((neuronCount - 1), instanceCount, 1);
+
   switch(layerActivationFunction)
   {
     runGpuActivatedCase(0);
@@ -35,10 +35,10 @@ void runGpuActivated(unsigned int neuronInputCount, fann_type * inputArray, fann
 }
 
 #define runGpuThreadsCase(X) case X: \
-runGpuActivated <X> (neuronInputCount, inputArray, weightsArray, sumArray, outputArray, layerSteepness, layerActivationFunction, neuronCount); \
+runGpuActivated <X> (neuronInputCount, inputArray, weightsArray, sumArray, outputArray, layerSteepness, layerActivationFunction, neuronCount, instanceCount, totalNeuronsCount, totalWeightsCount); \
 break;
 
-void runGpu(unsigned int neuronInputCount, fann_type * inputArray, fann_type * weightsArray, fann_type *sumArray, fann_type * outputArray, fann_type layerSteepness, unsigned int layerActivationFunction, unsigned int neuronCount)
+void runGpu(unsigned int neuronInputCount, fann_type * inputArray, fann_type * weightsArray, fann_type *sumArray, fann_type * outputArray, fann_type layerSteepness, unsigned int layerActivationFunction, unsigned int neuronCount, unsigned int instanceCount, unsigned int totalNeuronsCount, unsigned int totalWeightsCount)
 {
   unsigned int threadsCount = pow2roundup(neuronInputCount) / 2;
   if(threadsCount < 4)
@@ -46,7 +46,7 @@ void runGpu(unsigned int neuronInputCount, fann_type * inputArray, fann_type * w
   else
     if(threadsCount > 256)
       throw std::string("too many inputs");
-    
+
     switch (threadsCount)
     {
       runGpuThreadsCase(4);
@@ -59,23 +59,24 @@ void runGpu(unsigned int neuronInputCount, fann_type * inputArray, fann_type * w
     }
 }
 
-fann_type * gpuann_fann_run_implementation(struct fann * ann, gpuann &data)
+void gpuann_fann_run_implementation(gpuann &data)
 {
+  const fann * ann = data._fann;
   struct fann_neuron *neuronsArray = ann->first_layer->first_neuron;
   struct fann_layer *last_layer = ann->last_layer;
-  
+
   for(struct fann_layer *layer_it = ann->first_layer + 1; layer_it != last_layer; layer_it++)
   {
     struct fann_neuron * last_neuron = layer_it->last_neuron;
     struct fann_neuron * neuron_it   = layer_it->first_neuron;
-    
+
     fann_type    layerSteepness = neuron_it->activation_steepness;
     unsigned int layerActivationFunction = neuron_it->activation_function;
     unsigned int layerNeuronInputCount = neuron_it->last_con - neuron_it->first_con;
     unsigned int inputNeuronArrayShift = (layer_it - 1)->first_neuron - neuronsArray;
     unsigned int currentNeuronArrayShift = neuron_it - neuronsArray;
     unsigned int weightsArrayShift = neuron_it->first_con;
-    
+
     runGpu(layerNeuronInputCount
     , &(data.d_valuesArray[inputNeuronArrayShift])
     , &(data.d_weightsArray[weightsArrayShift])
@@ -83,7 +84,10 @@ fann_type * gpuann_fann_run_implementation(struct fann * ann, gpuann &data)
     , &(data.d_valuesArray[currentNeuronArrayShift])
     , layerSteepness
     , layerActivationFunction
-    , last_neuron - neuron_it);
+    , last_neuron - neuron_it
+    , data._instanceCount
+    , data._valuesInstanceSize
+    , data._weightsInstanceSize
+    );
   }
-  return 0;
 }

@@ -23,10 +23,12 @@ fann_type * gpuann_fann_run(struct fann * ann, fann_type * input)
   loadInputs(ann, input);
 
   gpuann gann;
+  creategpuann(gann, ann);
   loadgpuann(gann, ann);
-  gpuann_fann_run_implementation(ann, gann);
+  //for(int i = 0; i < 1e5; i++)
+  gpuann_fann_run_implementation(gann);
   savegpuann(gann, ann);
-  
+
   fann_type *output = ann->output;
   unsigned int num_output = ann->num_output;
   fann_neuron *neurons = (ann->last_layer - 1)->first_neuron;
@@ -34,6 +36,38 @@ fann_type * gpuann_fann_run(struct fann * ann, fann_type * input)
   {
     output[i] = neurons[i].value;
   }
+  removegpuann(gann);
+
   return ann->output;
 }
 
+void gpuann_fann_multirun(struct fann * ann, fann_type ** input, unsigned int instanceCount, fann_type ** output)
+{
+  check(ann);
+
+  gpuann gann;
+  creategpuann(gann, ann, instanceCount);
+
+  for(unsigned int i = 0; i < instanceCount; ++i)
+  {
+    loadInputs(ann, input[i]);
+    loadgpuann(gann, ann, i);
+  }
+
+  for(int i = 0; i < 1e5; i++)
+  gpuann_fann_run_implementation(gann);
+
+  unsigned int num_output = ann->num_output;
+  for(unsigned int i = 0; i < instanceCount; ++i)
+  {
+    savegpuann(gann, ann, i);
+
+    fann_neuron *neurons = (ann->last_layer - 1)->first_neuron;
+    for(unsigned int j = 0; j < num_output; ++j)
+    {
+      output[i][j] = neurons[j].value;
+    }
+  }
+
+  removegpuann(gann);
+}

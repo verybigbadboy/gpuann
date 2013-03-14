@@ -45,6 +45,38 @@ void runTest(struct fann *ann, fann_type * input, const char * testName)
     printf("Failed!!!\n");
 }
 
+void runTestMultiRun(struct fann *ann)
+{
+  fann_type **input = new fann_type*[400];
+  fann_type **output = new fann_type*[400];
+  for(unsigned int i = 0; i < 400; ++i)
+  {
+    input[i]  = new fann_type[2];
+    output[i] = new fann_type;
+  }
+
+  input[0][0] = 0;
+  input[0][1] = 0;
+  input[1][0] = 0;
+  input[1][1] = 1;
+  input[2][0] = 1;
+  input[2][1] = 0;
+  input[3][0] = 1;
+  input[3][1] = 1;
+
+  output[0][0] = 0;
+  output[1][0] = 0;
+  output[2][0] = 0;
+  output[3][0] = 0;
+
+  gpuann_fann_multirun(ann, (fann_type **) input, 400, (fann_type **)output);
+
+  for(unsigned int i = 0; i < 4; ++i)
+  {
+    printf("%f\n", output[i][0]);
+  }  
+}
+
 void runTests(struct fann *ann)
 {
   fann_type input[2];
@@ -62,12 +94,21 @@ void runTests(struct fann *ann)
   runTest(ann, input, "11");  
 }
 
-void bench(struct fann *ann)
+void gpubench(struct fann *ann)
 {
   fann_type input[2];
   input[0] = 0;
   input[1] = 0;
   runTest(ann, input, "00");
+}
+
+void cpubench(struct fann *ann)
+{
+  fann_type input[2];
+  input[0] = 0;
+  input[1] = 0;
+  for(int i = 0; i < 1e6; i++)
+    fann_run(ann, input);
 }
 
 int main()
@@ -76,8 +117,10 @@ int main()
 
   struct fann *ann = fann_create_from_file("xor_float.net");
 
-  //bench(ann);
-  runTests(ann);
+  //cpubench(ann);
+  //gpubench(ann);
+  //runTests(ann);
+  runTestMultiRun(ann);
 
   fann_destroy(ann);
   return 0;
