@@ -54,7 +54,7 @@ void gpuann_fann_multirun(struct fann * ann, fann_type ** input, unsigned int in
     loadgpuann(gann, ann, i);
   }
 
-  for(int i = 0; i < 1e5; i++)
+  for(int i = 0; i < 1e5/400; i++)
   gpuann_fann_run_implementation(gann);
 
   unsigned int num_output = ann->num_output;
