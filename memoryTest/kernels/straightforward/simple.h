@@ -54,12 +54,13 @@ __global__ void runGpuKernel(unsigned int neuronInputCount, fann_type * inputArr
       
       __syncthreads();
     }
-    
-    unsigned int rrr = blockSize / 2;
-    if(rrr > 32)
-      rrr = 32;
 
-    if (tid < rrr)
+    //avoid of access after local memory
+    unsigned int localMemorySize = blockSize / 2;
+    if(localMemorySize > 32)
+      localMemorySize = 32;
+
+    if (tid < localMemorySize)
     {
       // now that we are using warp-synchronous programming (below)
       // we need to declare our shared memory volatile so that the compiler
