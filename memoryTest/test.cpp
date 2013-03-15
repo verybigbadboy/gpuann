@@ -117,7 +117,7 @@ void cpubench(struct fann *ann)
   fann_type input[2];
   input[0] = 0;
   input[1] = 0;
-  for(int i = 0; i < 1e5; i++)
+  for(int i = 0; i < 1e6; i++)
     fann_run(ann, input);
 }
 
@@ -197,12 +197,15 @@ fann *createSpecificTrainedFann(unsigned int num_hiden_layers, unsigned int num_
 
 int fulltest()
 {
+  FILE *f;
+  f = fopen("result.txt", "w");
+
   for(int i = 1; i < 7; ++i)
   {
     for(int j = 30; j < 512; j *=2)
     {
       printf("Layer count = %d, Hiden neuron count = %d \n", i + 2, j);
-      fann *ann = createSpecificTrainedFann(i, 30);
+      fann *ann = createSpecificTrainedFann(i, j);
 
       clock_t start;
       double diff;
@@ -211,17 +214,19 @@ int fulltest()
 
       diff = ( std::clock() - start ) / (double)CLOCKS_PER_SEC;
       printf("Gpu: %f\n", diff);
+      float cpuTime = diff;
 
       start = clock();
       cpubench(ann);
 
       diff = ( std::clock() - start ) / (double)CLOCKS_PER_SEC;
-      printf("Gpu: %f\n", diff);
+      printf("Cpu: %f\n", diff);
 
+      fprintf(f, "%d %d %f", i + 2, j, cpuTime / diff);
       //runTests(ann, true);
 
       fann_destroy(ann);
-    }    
+    }
   }
 
   return 0;
@@ -240,15 +245,15 @@ int main()
 
   diff = ( std::clock() - start ) / (double)CLOCKS_PER_SEC;
   printf("%f\n", diff);
-  
 
-  struct fann *ann = fann_create_from_file("xor_float.net");
+
+//  struct fann *ann = fann_create_from_file("xor_float.net");
 
   //cpubench(ann);
   //gpubench(ann);
   //runTests(ann);
   //runTestMultiRun(ann);
 
-  fann_destroy(ann);
+//  fann_destroy(ann);
   return 0;
 }
