@@ -34,7 +34,7 @@ void removegpuann(gpuann& nn)
 
   cudaFree(nn.d_sumArray);
   cudaFree(nn.d_valuesArray);
-  cudaFree(nn.d_weightsArray);  
+  cudaFree(nn.d_weightsArray);
 }
 
 void loadgpuann(gpuann& nn, const fann *ann, unsigned int instanceIndex)

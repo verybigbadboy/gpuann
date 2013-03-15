@@ -60,7 +60,7 @@ void runTestMultiRun(struct fann *ann)
   for(unsigned int i = 0; i < 400; ++i)
   {
     input[i]  = new fann_type[2];
-    output[i] = new fann_type;
+    output[i] = new fann_type[1];
   }
 
   input[0][0] = 0;
@@ -78,6 +78,14 @@ void runTestMultiRun(struct fann *ann)
   output[3][0] = 0;
 
   gpuann_fann_multirun(ann, (fann_type **) input, 400, (fann_type **)output);
+
+  for(unsigned int i = 0; i < 400; ++i)
+  {
+    delete[] input[i];
+    delete[] output[i];
+  }
+  delete [] input;
+  delete [] output;
 }
 
 void runTests(struct fann *ann, bool fullreport = false)
