@@ -84,6 +84,7 @@ void savegpuann(const gpuann& nn, fann *ann, unsigned int instanceIndex)
   cudaMemcpyAsync(nn.h_tmp_sumArray,     nn.d_sumArray + neuronCount * instanceIndex,      neuronCount  * sizeof(fann_type), cudaMemcpyDeviceToHost);
   cudaMemcpyAsync(nn.h_tmp_valuesArray,  nn.d_valuesArray + neuronCount * instanceIndex,   neuronCount  * sizeof(fann_type), cudaMemcpyDeviceToHost);
   cudaMemcpyAsync(ann->weights,          nn.d_weightsArray + weightsCount * instanceIndex, weightsCount * sizeof(fann_type), cudaMemcpyDeviceToHost);
+  cudaThreadSynchronize();
 
   struct fann_neuron *neuronsArray = ann->first_layer->first_neuron;
   struct fann_layer *last_layer = ann->last_layer;
