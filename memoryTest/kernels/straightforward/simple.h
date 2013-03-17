@@ -18,12 +18,12 @@ __global__ void runGpuKernel(unsigned int neuronInputCount, fann_type * inputArr
     if((tid + blockSize) < neuronInputCount)
       l_summ += (fann_type) (inputArray[tid + blockSize + totalNeuronsCount * blockIdx.y] * weightsArray[neuronInputCount * blockIdx.x + tid + blockSize + totalWeightsCount * blockIdx.y]);
   }
-  
+
   if(tid < blockSize)
   {
     local[tid] = l_summ;
     __syncthreads();
-    
+
     // do reduction in shared mem
     if (blockSize >= 512)
     {
@@ -31,27 +31,27 @@ __global__ void runGpuKernel(unsigned int neuronInputCount, fann_type * inputArr
       {
         local[tid] = l_summ = l_summ + local[tid + 256];
       }
-      
+
       __syncthreads();
     }
-    
+
     if (blockSize >= 256)
     {
       if (tid < 128)
       {
         local[tid] = l_summ = l_summ + local[tid + 128];
       }
-      
+
       __syncthreads();
     }
-    
+
     if (blockSize >= 128)
     {
       if (tid <  64)
       {
         local[tid] = l_summ = l_summ + local[tid + 64];
       }
-      
+
       __syncthreads();
     }
 
@@ -66,32 +66,32 @@ __global__ void runGpuKernel(unsigned int neuronInputCount, fann_type * inputArr
       // we need to declare our shared memory volatile so that the compiler
       // doesn't reorder stores to it and induce incorrect behavior.
       volatile fann_type *smem = local;
-      
+
       if (blockSize >=  64)
       {
         smem[tid] = l_summ = l_summ + smem[tid + 32];
       }
-      
+
       if (blockSize >=  32)
       {
         smem[tid] = l_summ = l_summ + smem[tid + 16];
       }
-      
+
       if (blockSize >=  16)
       {
         smem[tid] = l_summ = l_summ + smem[tid + 8];
       }
-      
+
       if (blockSize >=   8)
       {
         smem[tid] = l_summ = l_summ + smem[tid + 4];
       }
-      
+
       if (blockSize >=   4)
       {
         smem[tid] = l_summ = l_summ + smem[tid + 2];
       }
-      
+
       if (blockSize >=   2)
       {
         smem[tid] = l_summ = l_summ + smem[tid + 1];

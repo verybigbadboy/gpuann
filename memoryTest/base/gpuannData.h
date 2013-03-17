@@ -16,10 +16,11 @@ struct gpuann
   fann_type *d_weightsArray;
   fann_type *d_valuesArray;
   fann_type *d_sumArray;
+  fann_type *d_trainErrorsArray;
+  fann_type *d_prevWeightsDeltas;
 
-  unsigned int _weightsInstanceSize;
-  unsigned int _valuesInstanceSize;
-  unsigned int _sumInstanceSize;
+  unsigned int _weightsCountPerInstance;
+  unsigned int _neuronsCountPerInstance;
 };
 
 

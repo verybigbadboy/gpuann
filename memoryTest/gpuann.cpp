@@ -2,6 +2,9 @@
 #include <base/gpuannDataCreator.h>
 #include <base/neuralNetworkTypeCheck.h>
 #include <kernels/straightforward/run.h>
+#include <kernels/backpropagateMSE/backpropagateMSErun.h>
+#include <kernels/computeMSE/run.h>
+#include <kernels/updateWeights/updateWeights.h>
 
 void loadInputs(struct fann * ann, fann_type * input)
 {
@@ -67,6 +70,30 @@ void gpuann_fann_multirun(struct fann * ann, fann_type ** input, unsigned int in
       output[i][j] = neurons[j].value;
     }
   }
+
+  removegpuann(gann);
+}
+
+#include <cuda.h>
+#include <cuda_runtime.h>
+
+void gpuann_fann_train(struct fann *ann, fann_type * input, fann_type * desired_output)
+{
+  check(ann);
+  loadInputs(ann, input);
+  
+  gpuann gann;
+  creategpuann(gann, ann);
+  loadgpuann(gann, ann);
+
+  fann_type *d_desired_output;
+  cudaMalloc((void **)&(d_desired_output), ann->num_output * sizeof(fann_type));
+  cudaMemcpyAsync(d_desired_output, desired_output, ann->num_output * sizeof(fann_type), cudaMemcpyHostToDevice);
+  
+  gpuann_fann_run_implementation(gann);
+  gpuann_fann_compute_MSE_implementation_gpu(gann, d_desired_output);
+  gpuann_fann_backpropagate_MSE_implementation_gpu(gann);
+  gpuann_fann_update_weights_implementation(gann);
 
   removegpuann(gann);
 }

@@ -86,8 +86,8 @@ void gpuann_fann_run_implementation(gpuann &data)
     , layerActivationFunction
     , last_neuron - neuron_it
     , data._instanceCount
-    , data._valuesInstanceSize
-    , data._weightsInstanceSize
+    , data._neuronsCountPerInstance
+    , data._weightsCountPerInstance
     );
   }
 }

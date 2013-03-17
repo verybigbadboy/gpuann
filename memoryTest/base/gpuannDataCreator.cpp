@@ -18,13 +18,15 @@ void creategpuann(gpuann& nn, const fann *ann, unsigned int instanceCount)
   nn.h_tmp_valuesArray  = (fann_type *)malloc(neuronCount * sizeof(fann_type));
   nn.h_tmp_sumArray     = (fann_type *)malloc(neuronCount * sizeof(fann_type));
 
-  cudaMalloc((void **)&(nn.d_sumArray),     instanceCount * neuronCount * sizeof(fann_type));
-  cudaMalloc((void **)&(nn.d_valuesArray),  instanceCount * neuronCount * sizeof(fann_type));
-  cudaMalloc((void **)&(nn.d_weightsArray), instanceCount * weightsCount * sizeof(fann_type));
+  cudaMalloc((void **)&(nn.d_sumArray),          instanceCount * neuronCount * sizeof(fann_type));
+  cudaMalloc((void **)&(nn.d_valuesArray),       instanceCount * neuronCount * sizeof(fann_type));
+  cudaMalloc((void **)&(nn.d_trainErrorsArray),  instanceCount * neuronCount * sizeof(fann_type));
+  cudaMalloc((void **)&(nn.d_weightsArray),      instanceCount * weightsCount * sizeof(fann_type));
+  cudaMalloc((void **)&(nn.d_prevWeightsDeltas), instanceCount * weightsCount * sizeof(fann_type));
+  
 
-  nn._sumInstanceSize = neuronCount;
-  nn._valuesInstanceSize = neuronCount;
-  nn._weightsInstanceSize = weightsCount;
+  nn._neuronsCountPerInstance = neuronCount;
+  nn._weightsCountPerInstance = weightsCount;
 }
 
 void removegpuann(gpuann& nn)
@@ -35,6 +37,8 @@ void removegpuann(gpuann& nn)
   cudaFree(nn.d_sumArray);
   cudaFree(nn.d_valuesArray);
   cudaFree(nn.d_weightsArray);
+  cudaFree(nn.d_trainErrorsArray);
+  cudaFree(nn.d_prevWeightsDeltas);
 }
 
 void loadgpuann(gpuann& nn, const fann *ann, unsigned int instanceIndex)
