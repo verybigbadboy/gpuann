@@ -146,14 +146,14 @@ void runTests(struct fann *ann, bool fullreport)
   bool success = true;
   
   fann_type input[2];
-  input[0] = 0;
-  input[1] = 0;
+  input[0] = -1;
+  input[1] = -1;
   success &= runTest(ann, input, "00", fullreport);
-  input[0] = 0;
+  input[0] = -1;
   input[1] = 1;
   success &= runTest(ann, input, "01", fullreport);
   input[0] = 1;
-  input[1] = 0;
+  input[1] = -1;
   success &= runTest(ann, input, "10", fullreport);
   input[0] = 1;
   input[1] = 1;
