@@ -23,6 +23,12 @@ void creategpuann(gpuann& nn, const fann *ann, unsigned int instanceCount)
   cudaMalloc((void **)&(nn.d_trainErrorsArray),  instanceCount * neuronCount * sizeof(fann_type));
   cudaMalloc((void **)&(nn.d_weightsArray),      instanceCount * weightsCount * sizeof(fann_type));
   cudaMalloc((void **)&(nn.d_prevWeightsDeltas), instanceCount * weightsCount * sizeof(fann_type));
+  cudaMemset(nn.d_sumArray, 0, instanceCount * neuronCount * sizeof(fann_type));
+  cudaMemset(nn.d_valuesArray, 0, instanceCount * neuronCount * sizeof(fann_type));
+  cudaMemset(nn.d_trainErrorsArray, 0, instanceCount * neuronCount * sizeof(fann_type));
+  cudaMemset(nn.d_weightsArray, 0, instanceCount * weightsCount * sizeof(fann_type));
+  cudaMemset(nn.d_prevWeightsDeltas, 0, instanceCount * weightsCount * sizeof(fann_type));
+  
   
 
   nn._neuronsCountPerInstance = neuronCount;
