@@ -32,6 +32,8 @@ __device__ inline void fann_backpropagate_MSE_gpu_kernel(unsigned int prevNeuron
     fann_type mySum = tmpError * weights[weightBeginIndex + prevLayerNeuron];
     sum[tid] = mySum;
 
+    __syncthreads();
+
     if (blockSize >= 512)
     {
       if (tid < 256)
@@ -200,6 +202,8 @@ void gpuann_fann_backpropagate_MSE_implementation_gpu(gpuann &data)
       prevSteepness,
       data._neuronsCountPerInstance,
       data._weightsCountPerInstance);
+
+    cudaThreadSynchronize();
   }
 }
 

@@ -130,6 +130,23 @@ void gpuann_fann_train(struct fann *ann, fann_type * input, fann_type * desired_
   }
   
   savegpuann(gann, ann);
+
+  cudaError_t error;
+  error = cudaGetLastError();
+  if(error != cudaSuccess)
+  {
+    // print the CUDA error message and exit
+    printf("CUDA error: %s\n", cudaGetErrorString(error));
+    exit(-1);
+  }
   
   removegpuann(gann);
+
+  error = cudaGetLastError();
+  if(error != cudaSuccess)
+  {
+    // print the CUDA error message and exit
+    printf("CUDA error: %s\n", cudaGetErrorString(error));
+    exit(-1);
+  }
 }
