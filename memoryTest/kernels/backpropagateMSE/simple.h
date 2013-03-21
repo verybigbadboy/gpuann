@@ -4,9 +4,11 @@
 #include <cuda_runtime.h>
 #include <common/math.h>
 #include <base/derived.h>
+#include <string>
 
 //prevlayer block
-template <unsigned int prevActivationFunction>
+
+template <unsigned int blockSize, unsigned int prevActivationFunction>
 __device__ inline void fann_backpropagate_MSE_gpu_kernel(unsigned int prevNeuronsCount, unsigned int neuronsCount, fann_type *weights, fann_type *trainErrors, fann_type *prevTrainErrors, fann_type *prevValue, fann_type *prevSum, fann_type prevSteepness
 , unsigned int totalNeuronsCount, unsigned int totalWeightsCount)
 {
@@ -17,35 +19,101 @@ __device__ inline void fann_backpropagate_MSE_gpu_kernel(unsigned int prevNeuron
   unsigned int prevLayerNeuron = blockIdx.x + instance * totalNeuronsCount;
   unsigned int weightBeginIndex = tid * weightPerNeuronCount + instance * totalWeightsCount;
 
-  volatile __shared__ fann_type sum[2];
-  if(tid == 0)
-    sum[0] = 0;
+  __shared__ fann_type sum[blockSize];
 
+  if(tid < blockSize)
+    sum[tid] = 0;
   __syncthreads();
 
-  sum[0] = sum[0] + 1;// tmpError * weights[weightBeginIndex + prevLayerNeuron];
-
-  __syncthreads();
-
-  prevTrainErrors[prevLayerNeuron] = sum[0];
-  /*
-  if(tid <= neuronsCount)
+  if(tid < neuronsCount)
   {
     fann_type tmpError = trainErrors[neuronIndex];
 
-    //TODO:expand reduce
-    sum += 1;// tmpError * weights[weightBeginIndex + prevLayerNeuron];
-    __syncthreads();
-    
+    fann_type mySum = tmpError * weights[weightBeginIndex + prevLayerNeuron];
+    sum[tid] = mySum;
+
+    if (blockSize >= 512)
+    {
+      if (tid < 256)
+      {
+        sum[tid] = mySum = mySum + sum[tid + 256];
+      }
+
+      __syncthreads();
+    }
+
+    if (blockSize >= 256)
+    {
+      if (tid < 128)
+      {
+        sum[tid] = mySum = mySum + sum[tid + 128];
+      }
+
+      __syncthreads();
+    }
+
+    if (blockSize >= 128)
+    {
+      if (tid <  64)
+      {
+        sum[tid] = mySum = mySum + sum[tid +  64];
+      }
+
+      __syncthreads();
+    }
+
+    unsigned int localMemorySize = blockSize / 2;
+    if(localMemorySize > 32)
+      localMemorySize = 32;
+
+    if (tid < localMemorySize)
+    {
+      // now that we are using warp-synchronous programming (below)
+      // we need to declare our shared memory volatile so that the compiler
+      // doesn't reorder stores to it and induce incorrect behavior.
+      volatile fann_type *smem = sum;
+
+      if (blockSize >=  64)
+      {
+        smem[tid] = mySum = mySum + smem[tid + 32];
+      }
+
+      if (blockSize >=  32)
+      {
+        smem[tid] = mySum = mySum + smem[tid + 16];
+      }
+
+      if (blockSize >=  16)
+      {
+        smem[tid] = mySum = mySum + smem[tid +  8];
+      }
+
+      if (blockSize >=   8)
+      {
+        smem[tid] = mySum = mySum + smem[tid +  4];
+      }
+
+      if (blockSize >=   4)
+      {
+        smem[tid] = mySum = mySum + smem[tid +  2];
+      }
+
+      if (blockSize >=   2)
+      {
+        smem[tid] = mySum = mySum + smem[tid +  1];
+      }
+    }
+
     if(tid == 0)
-      prevTrainErrors[prevLayerNeuron] = sum;// * gpuann_fann_activation_derived<prevActivationFunction>(prevSteepness, prevValue[prevLayerNeuron], prevSum[prevLayerNeuron]);
-  }*/
+      prevTrainErrors[prevLayerNeuron] = sum[0] * gpuann_fann_activation_derived<prevActivationFunction>(prevSteepness, prevValue[prevLayerNeuron], prevSum[prevLayerNeuron]);
+  }
 }
 
 #define fann_backpropagate_MSE_gpu_kernel_case(X)   case X: \
-fann_backpropagate_MSE_gpu_kernel<X>(prevNeuronsCount, neuronsCount, weights, trainErrors, prevTrainErrors, prevValue, prevSum, prevSteepness, totalNeuronsCount, totalWeightsCount); \
+fann_backpropagate_MSE_gpu_kernel<blockSize, X>(prevNeuronsCount, neuronsCount, weights, trainErrors, prevTrainErrors, prevValue, prevSum, prevSteepness, totalNeuronsCount, totalWeightsCount); \
 break;
 
+template <unsigned int blockSize>
 __global__ void fann_backpropagate_MSE_gpu_kernel_activationFunction(unsigned int prevActivationFunction, unsigned int prevNeuronsCount, unsigned int neuronsCount, fann_type *weights, fann_type *trainErrors, fann_type *prevTrainErrors, fann_type *prevValue, fann_type *prevSum, fann_type prevSteepness
 , unsigned int totalNeuronsCount, unsigned int totalWeightsCount)
 {
@@ -70,6 +138,35 @@ __global__ void fann_backpropagate_MSE_gpu_kernel_activationFunction(unsigned in
   }
 }
 
+#define fann_backpropagate_MSE_gpu_kernel_activationFunction_case(X)   case X: \
+fann_backpropagate_MSE_gpu_kernel_activationFunction<X> <<<dimGrid, dimBlock>>> (prevActivationFunction, prevNeuronsCount, neuronsCount, weights, trainErrors, prevTrainErrors, prevValue, prevSum, prevSteepness, totalNeuronsCount, totalWeightsCount); \
+break;
+
+void fann_backpropagate_MSE_gpu_kernel_blockSize(unsigned int instanceCount, unsigned int prevActivationFunction, unsigned int prevNeuronsCount, unsigned int neuronsCount, fann_type *weights, fann_type *trainErrors, fann_type *prevTrainErrors, fann_type *prevValue, fann_type *prevSum, fann_type prevSteepness
+, unsigned int totalNeuronsCount, unsigned int totalWeightsCount)
+{
+  unsigned int threadsCount = pow2roundup(neuronsCount);
+  dim3 dimBlock(threadsCount, 1, 1);
+  dim3 dimGrid(prevNeuronsCount, instanceCount, 1);
+
+  if(threadsCount < 4)
+    threadsCount = 4;
+  else
+    if(threadsCount > 256)
+      throw std::string("too many inputs");
+
+  switch (threadsCount)
+  {
+    fann_backpropagate_MSE_gpu_kernel_activationFunction_case(4);
+    fann_backpropagate_MSE_gpu_kernel_activationFunction_case(8);
+    fann_backpropagate_MSE_gpu_kernel_activationFunction_case(16);
+    fann_backpropagate_MSE_gpu_kernel_activationFunction_case(32);
+    fann_backpropagate_MSE_gpu_kernel_activationFunction_case(64);
+    fann_backpropagate_MSE_gpu_kernel_activationFunction_case(128);
+    fann_backpropagate_MSE_gpu_kernel_activationFunction_case(256);
+  }
+}
+
 
 void gpuann_fann_backpropagate_MSE_implementation_gpu(gpuann &data)
 {
@@ -91,15 +188,12 @@ void gpuann_fann_backpropagate_MSE_implementation_gpu(gpuann &data)
     unsigned int prevActivationFunction = prevLayerFirstNeuron->activation_function;
     fann_type prevSteepness = prevLayerFirstNeuron->activation_steepness;
 
-    unsigned int threadCount = pow2roundup(layerSize);
-    dim3 dimBlock(threadCount, 1, 1);
-    dim3 dimGrid(prevLayerSize, instanceCount, 1);
-
-    fann_backpropagate_MSE_gpu_kernel_activationFunction<<<dimGrid, dimBlock>>>(
+    fann_backpropagate_MSE_gpu_kernel_blockSize(
+      instanceCount,
       prevActivationFunction,
       prevLayerSize,
       layerSize,
-      &(data.d_weightsArray[layerNeuronShift]),
+      &(data.d_weightsArray[layerIt->first_neuron->first_con]),
       &(data.d_trainErrorsArray[layerNeuronShift]),
       &(data.d_trainErrorsArray[prevLayerNeuronShift]),
       &(data.d_valuesArray[prevLayerNeuronShift]),
@@ -118,18 +212,18 @@ void fann_backpropagate_MSE(struct fann *ann)
   struct fann_layer *layer_it;
   struct fann_neuron *neuron_it, *last_neuron;
   struct fann_neuron **connections;
-  
+
   fann_type *error_begin = ann->train_errors;
   fann_type *error_prev_layer;
   fann_type *weights;
   const struct fann_neuron *first_neuron = ann->first_layer->first_neuron;
   const struct fann_layer *second_layer = ann->first_layer + 1;
   struct fann_layer *last_layer = ann->last_layer;
-  
+
   for(layer_it = last_layer - 1; layer_it > second_layer; --layer_it)
   {
     last_neuron = layer_it->last_neuron;
-    
+
 
     error_prev_layer = error_begin + ((layer_it - 1)->first_neuron - first_neuron);
 
@@ -148,7 +242,7 @@ void fann_backpropagate_MSE(struct fann *ann)
 
     error_prev_layer = error_begin + ((layer_it - 1)->first_neuron - first_neuron);
     last_neuron = (layer_it - 1)->last_neuron;
-    
+
     for(neuron_it = (layer_it - 1)->first_neuron; neuron_it != last_neuron; neuron_it++)
     {
       *error_prev_layer *= fann_activation_derived(neuron_it->activation_function, neuron_it->activation_steepness, neuron_it->value, neuron_it->sum);

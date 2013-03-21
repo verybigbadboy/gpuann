@@ -96,8 +96,8 @@ void gpuann_fann_train(struct fann *ann, fann_type * input, fann_type * desired_
   createDump(gann, dump1);
   gpuann_fann_backpropagate_MSE_implementation_gpu(gann);
   createDump(gann, dump2);
-  gpuann_fann_update_weights_implementation(gann);
-  createDump(gann, dump3);
+//  gpuann_fann_update_weights_implementation(gann);
+//  createDump(gann, dump3);
 
   fann *cpuann = fann_copy(ann);
 
