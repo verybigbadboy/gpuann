@@ -167,7 +167,6 @@ void fann_backpropagate_MSE_gpu_kernel_blockSize(unsigned int instanceCount, uns
   }
 }
 
-
 void gpuann_fann_backpropagate_MSE_implementation_gpu(gpuann &data)
 {
   const fann *ann = data._fann;

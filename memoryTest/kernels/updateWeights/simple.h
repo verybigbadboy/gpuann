@@ -12,13 +12,13 @@ __global__ void gpuann_fann_update_weights_implementation_gpu_kernel(unsigned in
   unsigned int tid = threadIdx.x;
   unsigned int neuronIndex = blockIdx.x;
   unsigned int instance = blockIdx.y;
-  unsigned int weightIndex     = tid + instance * totalWeightsCount;
+  unsigned int weightIndex     = tid + neuronIndex * neuronInputCount + instance * totalWeightsCount;
   unsigned int prevNeuronIndex = tid + instance * totalNeuronsCount;
-
-  fann_type tmpError = trainErrors[neuronIndex + instance * totalNeuronsCount] * learningRate;
 
   if(tid < neuronInputCount)
   {
+    fann_type tmpError = trainErrors[neuronIndex + instance * totalNeuronsCount] * learningRate;
+
     fann_type delta_w = tmpError * prevNeuronValues[prevNeuronIndex] + learningMomentum * prevWeightsDeltas[weightIndex];
     weights[weightIndex] += delta_w;
     prevWeightsDeltas[weightIndex] = delta_w;
@@ -48,10 +48,10 @@ void gpuann_fann_update_weights_implementation(gpuann &data)
     unsigned int currentLayerNeuronArrayShift = layerIt->first_neuron - neuronsArray;
     unsigned int weightsArrayShift = neuronIt->first_con;
 
-    unsigned int threadCount = pow2roundup(layerNeuronInputCount);
+    unsigned int threadCount = pow2roundup(layerSize);
 
-    dim3 dimBlock(layerSize, 1, 1);
-    dim3 dimGrid(layerNeuronInputCount, instanceCount, 1);
+    dim3 dimBlock(layerNeuronInputCount, 1, 1);
+    dim3 dimGrid(threadCount, instanceCount, 1);
 
     gpuann_fann_update_weights_implementation_gpu_kernel<<<dimGrid, dimBlock>>>(
            layerNeuronInputCount,

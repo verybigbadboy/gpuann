@@ -96,8 +96,8 @@ void gpuann_fann_train(struct fann *ann, fann_type * input, fann_type * desired_
   createDump(gann, dump1);
   gpuann_fann_backpropagate_MSE_implementation_gpu(gann);
   createDump(gann, dump2);
-//  gpuann_fann_update_weights_implementation(gann);
-//  createDump(gann, dump3);
+  gpuann_fann_update_weights_implementation(gann);
+  createDump(gann, dump3);
 
   fann *cpuann = fann_copy(ann);
 
@@ -119,10 +119,15 @@ void gpuann_fann_train(struct fann *ann, fann_type * input, fann_type * desired_
 
   for(int i = 0; i < neuronCount; ++i)
   {
-    printf("\n%f %f", cpuann->train_errors[i], dump2.d_trainErrorsArray[i]);
+    printf("\n%3d %f %f", i, cpuann->train_errors[i], dump2.d_trainErrorsArray[i]);
   }
   
   fann_update_weights(cpuann);
+
+  for(int i = 0; i < weightsCount; ++i)
+  {
+    printf("\n%3d %3.4f %3.4f %3.4f", i, cpuann->weights[i], dump3.d_weightsArray[i], dump1.d_weightsArray[i]);
+  }
   
   savegpuann(gann, ann);
   
