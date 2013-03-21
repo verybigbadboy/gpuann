@@ -81,7 +81,8 @@ void gpuann_fann_train(struct fann *ann, fann_type * input, fann_type * desired_
 {
   check(ann);
   loadInputs(ann, input);
-  
+
+  debugGpuann dump1, dump2, dump3;
   gpuann gann;
   creategpuann(gann, ann);
   loadgpuann(gann, ann);
@@ -92,8 +93,38 @@ void gpuann_fann_train(struct fann *ann, fann_type * input, fann_type * desired_
   
   gpuann_fann_run_implementation(gann);
   gpuann_fann_compute_MSE_implementation_gpu(gann, d_desired_output);
+  createDump(gann, dump1);
   gpuann_fann_backpropagate_MSE_implementation_gpu(gann);
+  createDump(gann, dump2);
   gpuann_fann_update_weights_implementation(gann);
+  createDump(gann, dump3);
 
+  fann *cpuann = fann_copy(ann);
+
+  fann_run(cpuann, input);
+
+  unsigned int neuronCount = ann->total_neurons;
+  unsigned int weightsCount = ((ann->last_layer - 1)->last_neuron - 1)->last_con;
+  
+  fann_compute_MSE(cpuann, desired_output);
+
+  for(int i = 0; i < neuronCount; ++i)
+  {
+    printf("\n%3d %f %f", i, cpuann->train_errors[i], dump1.d_trainErrorsArray[i]);
+  }
+
+  fann_backpropagate_MSE(cpuann);
+
+  printf("\nBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
+
+  for(int i = 0; i < neuronCount; ++i)
+  {
+    printf("\n%f %f", cpuann->train_errors[i], dump2.d_trainErrorsArray[i]);
+  }
+  
+  fann_update_weights(cpuann);
+  
+  savegpuann(gann, ann);
+  
   removegpuann(gann);
 }

@@ -17,20 +17,29 @@ __device__ inline void fann_backpropagate_MSE_gpu_kernel(unsigned int prevNeuron
   unsigned int prevLayerNeuron = blockIdx.x + instance * totalNeuronsCount;
   unsigned int weightBeginIndex = tid * weightPerNeuronCount + instance * totalWeightsCount;
 
-  __shared__ fann_type sum;
+  volatile __shared__ fann_type sum[2];
   if(tid == 0)
-    sum = 0;
+    sum[0] = 0;
 
   __syncthreads();
 
-  if(tid < neuronsCount)
+  sum[0] = sum[0] + 1;// tmpError * weights[weightBeginIndex + prevLayerNeuron];
+
+  __syncthreads();
+
+  prevTrainErrors[prevLayerNeuron] = sum[0];
+  /*
+  if(tid <= neuronsCount)
   {
     fann_type tmpError = trainErrors[neuronIndex];
 
     //TODO:expand reduce
-    sum += tmpError * weights[weightBeginIndex + prevLayerNeuron];
-    prevTrainErrors[prevLayerNeuron] = sum * gpuann_fann_activation_derived<prevActivationFunction>(prevSteepness, prevValue[prevLayerNeuron], prevSum[prevLayerNeuron]);
-  }
+    sum += 1;// tmpError * weights[weightBeginIndex + prevLayerNeuron];
+    __syncthreads();
+    
+    if(tid == 0)
+      prevTrainErrors[prevLayerNeuron] = sum;// * gpuann_fann_activation_derived<prevActivationFunction>(prevSteepness, prevValue[prevLayerNeuron], prevSum[prevLayerNeuron]);
+  }*/
 }
 
 #define fann_backpropagate_MSE_gpu_kernel_case(X)   case X: \

@@ -112,3 +112,70 @@ void savegpuann(const gpuann& nn, fann *ann, unsigned int instanceIndex)
     }
   }
 }
+
+void createDump(gpuann &nn, debugGpuann &dnn)
+{
+  const fann *ann = nn._fann;
+  
+  unsigned int neuronCount = ann->total_neurons;
+  unsigned int weightsCount = ((ann->last_layer - 1)->last_neuron - 1)->last_con;
+
+  dnn.d_sumArray = new fann_type[neuronCount];
+  dnn.d_valuesArray = new fann_type[neuronCount];
+  dnn.d_trainErrorsArray = new fann_type[neuronCount];
+  dnn.d_weightsArray = new fann_type[weightsCount];
+  dnn.d_prevWeightsDeltas = new fann_type[weightsCount];
+
+  cudaThreadSynchronize();
+
+  cudaError_t error = cudaGetLastError();
+  if(error != cudaSuccess)
+  {
+    // print the CUDA error message and exit
+    printf("CUDA error: %s\n", cudaGetErrorString(error));
+    exit(-1);
+  }
+  
+  
+  cudaMemcpy(dnn.d_sumArray,                  nn.d_sumArray,         neuronCount  * sizeof(fann_type), cudaMemcpyDeviceToHost);
+  error = cudaGetLastError();
+  if(error != cudaSuccess)
+  {
+    // print the CUDA error message and exit
+    printf("CUDA error: %s\n", cudaGetErrorString(error));
+    exit(-1);
+  }
+  cudaMemcpy(dnn.d_valuesArray,               nn.d_valuesArray,      neuronCount  * sizeof(fann_type), cudaMemcpyDeviceToHost);
+  error = cudaGetLastError();
+  if(error != cudaSuccess)
+  {
+    // print the CUDA error message and exit
+    printf("CUDA error: %s\n", cudaGetErrorString(error));
+    exit(-1);
+  }
+  cudaMemcpy(dnn.d_trainErrorsArray,          nn.d_trainErrorsArray, neuronCount  * sizeof(fann_type), cudaMemcpyDeviceToHost);
+  error = cudaGetLastError();
+  if(error != cudaSuccess)
+  {
+    // print the CUDA error message and exit
+    printf("CUDA error: %s\n", cudaGetErrorString(error));
+    exit(-1);
+  }
+  cudaMemcpy(dnn.d_weightsArray,              nn.d_weightsArray,      weightsCount * sizeof(fann_type), cudaMemcpyDeviceToHost);
+  error = cudaGetLastError();
+  if(error != cudaSuccess)
+  {
+    // print the CUDA error message and exit
+    printf("CUDA error: %s\n", cudaGetErrorString(error));
+    exit(-1);
+  }
+  cudaMemcpy(dnn.d_prevWeightsDeltas,         nn.d_prevWeightsDeltas, weightsCount * sizeof(fann_type), cudaMemcpyDeviceToHost);
+  error = cudaGetLastError();
+  if(error != cudaSuccess)
+  {
+    // print the CUDA error message and exit
+    printf("CUDA error: %s\n", cudaGetErrorString(error));
+    exit(-1);
+  }
+  cudaThreadSynchronize();
+}

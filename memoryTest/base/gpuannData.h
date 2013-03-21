@@ -23,5 +23,9 @@ struct gpuann
   unsigned int _neuronsCountPerInstance;
 };
 
+struct debugGpuann: public gpuann
+{
+};
+
 
 #endif // GPUANNDATA_H

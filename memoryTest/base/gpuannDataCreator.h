@@ -8,4 +8,6 @@ void removegpuann(gpuann& nn);
 void loadgpuann(gpuann& nn, const fann *ann, unsigned int instanceIndex = 0);
 void savegpuann(const gpuann& nn, fann *ann, unsigned int instanceIndex = 0);
 
+void createDump(gpuann &nn, debugGpuann &dnn);
+
 #endif // GPUDATACREATOR_H

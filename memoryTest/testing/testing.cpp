@@ -130,9 +130,20 @@ bool runTest(struct fann *ann, fann_type * input, const char * testName, bool fu
   if(!fullreport)
     printf("CPU xor test (%f,%f) -> %f\n", input[0], input[1], calc_out[0]);
 
+  bool success = (calc_out_cpu - calc_out_gpu) * (calc_out_cpu - calc_out_gpu) < 0.001;
+
+  fann_type want = 0;
+  gpuann_fann_train(ann, input, &want);
+
+  calc_out = fann_run(ann, input);
+  calc_out_cpu = calc_out[0];
+
+  if(!fullreport)
+    printf("gPU TRAIN xor test (%f,%f) -> %f\n", input[0], input[1], calc_out[0]);
+  
   //printann(ann);
 
-  bool success = (calc_out_cpu - calc_out_gpu) * (calc_out_cpu - calc_out_gpu) < 0.001;
+  
   if(!fullreport)
     if(success)
       printf("Passed\n");
