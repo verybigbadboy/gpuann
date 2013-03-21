@@ -82,7 +82,6 @@ void gpuann_fann_train(struct fann *ann, fann_type * input, fann_type * desired_
   check(ann);
   loadInputs(ann, input);
 
-  debugGpuann dump1, dump2, dump3;
   gpuann gann;
   creategpuann(gann, ann);
   loadgpuann(gann, ann);
@@ -90,46 +89,13 @@ void gpuann_fann_train(struct fann *ann, fann_type * input, fann_type * desired_
   fann_type *d_desired_output;
   cudaMalloc((void **)&(d_desired_output), ann->num_output * sizeof(fann_type));
   cudaMemcpyAsync(d_desired_output, desired_output, ann->num_output * sizeof(fann_type), cudaMemcpyHostToDevice);
-  
+
   gpuann_fann_run_implementation(gann);
   gpuann_fann_compute_MSE_implementation_gpu(gann, d_desired_output);
-  createDump(gann, dump1);
   gpuann_fann_backpropagate_MSE_implementation_gpu(gann);
-  createDump(gann, dump2);
   gpuann_fann_update_weights_implementation(gann);
-  createDump(gann, dump3);
 
-  fann *cpuann = fann_copy(ann);
-
-  fann_run(cpuann, input);
-
-  unsigned int neuronCount = ann->total_neurons;
-  unsigned int weightsCount = ((ann->last_layer - 1)->last_neuron - 1)->last_con;
-  
-  fann_compute_MSE(cpuann, desired_output);
-
-  for(int i = 0; i < neuronCount; ++i)
-  {
-    printf("\n%3d %f %f", i, cpuann->train_errors[i], dump1.d_trainErrorsArray[i]);
-  }
-
-  fann_backpropagate_MSE(cpuann);
-
-  printf("\nBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
-
-  for(int i = 0; i < neuronCount; ++i)
-  {
-    printf("\n%3d %f %f", i, cpuann->train_errors[i], dump2.d_trainErrorsArray[i]);
-  }
-  
-  fann_update_weights(cpuann);
-
-  for(int i = 0; i < weightsCount; ++i)
-  {
-    printf("\n%3d %3.4f %3.4f %3.4f", i, cpuann->weights[i], dump3.d_weightsArray[i], dump1.d_weightsArray[i]);
-  }
-  
   savegpuann(gann, ann);
-  
+
   removegpuann(gann);
 }
