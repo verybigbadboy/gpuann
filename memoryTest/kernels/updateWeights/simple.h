@@ -48,10 +48,10 @@ void gpuann_fann_update_weights_implementation(gpuann &data)
     unsigned int currentLayerNeuronArrayShift = layerIt->first_neuron - neuronsArray;
     unsigned int weightsArrayShift = neuronIt->first_con;
 
-    unsigned int threadCount = pow2roundup(layerSize);
+    unsigned int threadCount = pow2roundup(layerNeuronInputCount);
 
-    dim3 dimBlock(layerNeuronInputCount, 1, 1);
-    dim3 dimGrid(threadCount, instanceCount, 1);
+    dim3 dimBlock(threadCount, 1, 1); //TODO remove bias
+    dim3 dimGrid(layerSize - 1, instanceCount, 1);
 
     gpuann_fann_update_weights_implementation_gpu_kernel<<<dimGrid, dimBlock>>>(
            layerNeuronInputCount,

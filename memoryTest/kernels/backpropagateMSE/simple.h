@@ -25,12 +25,16 @@ __device__ inline void fann_backpropagate_MSE_gpu_kernel(unsigned int prevNeuron
     sum[tid] = 0;
   __syncthreads();
 
+  fann_type mySum = 0;
+
   if(tid < neuronsCount)
   {
     fann_type tmpError = trainErrors[neuronIndex];
 
-    fann_type mySum = tmpError * weights[weightBeginIndex + prevLayerNeuron];
+    mySum = tmpError * weights[weightBeginIndex + prevLayerNeuron];
     sum[tid] = mySum;
+
+    __syncthreads();
 
     if (blockSize >= 512)
     {
@@ -103,10 +107,10 @@ __device__ inline void fann_backpropagate_MSE_gpu_kernel(unsigned int prevNeuron
         smem[tid] = mySum = mySum + smem[tid +  1];
       }
     }
-
-    if(tid == 0)
-      prevTrainErrors[prevLayerNeuron] = sum[0] * gpuann_fann_activation_derived<prevActivationFunction>(prevSteepness, prevValue[prevLayerNeuron], prevSum[prevLayerNeuron]);
   }
+
+  if(tid == 0)
+    prevTrainErrors[prevLayerNeuron] = mySum * gpuann_fann_activation_derived<prevActivationFunction>(prevSteepness, prevValue[prevLayerNeuron], prevSum[prevLayerNeuron]);
 }
 
 #define fann_backpropagate_MSE_gpu_kernel_case(X)   case X: \
@@ -146,8 +150,6 @@ void fann_backpropagate_MSE_gpu_kernel_blockSize(unsigned int instanceCount, uns
 , unsigned int totalNeuronsCount, unsigned int totalWeightsCount)
 {
   unsigned int threadsCount = pow2roundup(neuronsCount);
-  dim3 dimBlock(threadsCount, 1, 1);
-  dim3 dimGrid(prevNeuronsCount, instanceCount, 1);
 
   if(threadsCount < 4)
     threadsCount = 4;
@@ -155,6 +157,9 @@ void fann_backpropagate_MSE_gpu_kernel_blockSize(unsigned int instanceCount, uns
     if(threadsCount > 256)
       throw std::string("too many inputs");
 
+  dim3 dimBlock(threadsCount, 1, 1);
+  dim3 dimGrid(prevNeuronsCount, instanceCount, 1);
+    
   switch (threadsCount)
   {
     fann_backpropagate_MSE_gpu_kernel_activationFunction_case(4);
