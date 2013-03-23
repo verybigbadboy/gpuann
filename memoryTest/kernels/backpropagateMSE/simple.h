@@ -196,7 +196,7 @@ void gpuann_fann_backpropagate_MSE_implementation_gpu(gpuann &data)
       instanceCount,
       prevActivationFunction,
       prevLayerSize,
-      layerSize,
+      layerSize - 1, //because bias not connected to any
       &(data.d_weightsArray[layerIt->first_neuron->first_con]),
       &(data.d_trainErrorsArray[layerNeuronShift]),
       &(data.d_trainErrorsArray[prevLayerNeuronShift]),
