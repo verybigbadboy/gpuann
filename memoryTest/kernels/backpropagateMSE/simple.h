@@ -29,9 +29,7 @@ __device__ inline void fann_backpropagate_MSE_gpu_kernel(unsigned int prevNeuron
 
   if(tid < neuronsCount)
   {
-    fann_type tmpError = trainErrors[neuronIndex];
-
-    mySum = tmpError * weights[weightBeginIndex + prevLayerNeuron];
+    mySum = trainErrors[neuronIndex] * weights[weightBeginIndex + prevLayerNeuron];
     sum[tid] = mySum;
 
     __syncthreads();
@@ -154,7 +152,7 @@ void fann_backpropagate_MSE_gpu_kernel_blockSize(unsigned int instanceCount, uns
   if(threadsCount < 4)
     threadsCount = 4;
   else
-    if(threadsCount > 256)
+    if(threadsCount > 512)
       throw std::string("too many inputs");
 
   dim3 dimBlock(threadsCount, 1, 1);
@@ -169,6 +167,7 @@ void fann_backpropagate_MSE_gpu_kernel_blockSize(unsigned int instanceCount, uns
     fann_backpropagate_MSE_gpu_kernel_activationFunction_case(64);
     fann_backpropagate_MSE_gpu_kernel_activationFunction_case(128);
     fann_backpropagate_MSE_gpu_kernel_activationFunction_case(256);
+    fann_backpropagate_MSE_gpu_kernel_activationFunction_case(512);
   }
 }
 
@@ -185,7 +184,7 @@ void gpuann_fann_backpropagate_MSE_implementation_gpu(gpuann &data)
   {
     unsigned int layerSize = layerIt->last_neuron - layerIt->first_neuron;
     unsigned int layerNeuronShift = layerIt->first_neuron - firstNeuron;
-    fann_layer *prevLayer = layerIt -1;
+    fann_layer *prevLayer = layerIt - 1;
     fann_neuron *prevLayerFirstNeuron = prevLayer->first_neuron;
     unsigned int prevLayerNeuronShift = prevLayerFirstNeuron - firstNeuron;
     unsigned int prevLayerSize = prevLayer->last_neuron - prevLayerFirstNeuron;
