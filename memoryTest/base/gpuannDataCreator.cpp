@@ -124,7 +124,7 @@ void savegpuann(const gpuann& nn, fann *ann, unsigned int instanceIndex)
 void createDump(gpuann &nn, debugGpuann &dnn)
 {
   const fann *ann = nn._fann;
-  
+
   unsigned int neuronCount = ann->total_neurons;
   unsigned int weightsCount = ((ann->last_layer - 1)->last_neuron - 1)->last_con;
 
@@ -143,8 +143,7 @@ void createDump(gpuann &nn, debugGpuann &dnn)
     printf("CUDA error: %s\n", cudaGetErrorString(error));
     exit(-1);
   }
-  
-  
+
   cudaMemcpy(dnn.d_sumArray,                  nn.d_sumArray,         neuronCount  * sizeof(fann_type), cudaMemcpyDeviceToHost);
   error = cudaGetLastError();
   if(error != cudaSuccess)
@@ -187,3 +186,30 @@ void createDump(gpuann &nn, debugGpuann &dnn)
   }
   cudaThreadSynchronize();
 }
+
+void creategpuannTrainData(gpuannTrainData &trainData, fann_train_data *train)
+{
+  unsigned int dataCount = train->num_data;
+  unsigned int inputCount = train->num_input;
+  unsigned int outputCount = train->num_output;
+  trainData._dataCount   = dataCount;
+  trainData._inputCount  = inputCount;
+  trainData._outputCount = outputCount;
+
+  cudaMalloc((void **)&(trainData.d_input),  dataCount * inputCount  * sizeof(fann_type));
+  cudaMalloc((void **)&(trainData.d_output), dataCount * outputCount * sizeof(fann_type));
+
+  for(unsigned int i = 0; i < dataCount; ++i)
+  {
+    cudaMemcpyAsync(trainData.d_input  + i * inputCount,  train->input[i],  inputCount  * sizeof(fann_type), cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(trainData.d_output + i * outputCount, train->output[i], outputCount * sizeof(fann_type), cudaMemcpyHostToDevice);
+  }
+}
+
+void removegpuannTrainData(gpuannTrainData &trainData)
+{
+  cudaFree(trainData.d_input);
+  cudaFree(trainData.d_output);
+}
+
+

@@ -31,5 +31,14 @@ struct debugGpuann: public gpuann
 {
 };
 
+struct gpuannTrainData
+{
+  unsigned int _dataCount;
+  unsigned int _inputCount;
+  unsigned int _outputCount;
+  fann_type * d_input;
+  fann_type * d_output;
+};
+
 
 #endif // GPUANNDATA_H

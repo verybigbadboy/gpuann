@@ -10,4 +10,7 @@ void savegpuann(const gpuann& nn, fann *ann, unsigned int instanceIndex = 0);
 
 void createDump(gpuann &nn, debugGpuann &dnn);
 
+void creategpuannTrainData(gpuannTrainData &trainData, fann_train_data *train);
+void removegpuannTrainData(gpuannTrainData &trainData);
+
 #endif // GPUDATACREATOR_H

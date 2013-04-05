@@ -50,7 +50,8 @@ fann_type * gpuann_fann_run(struct fann * ann, fann_type * input)
   return ann->output;
 }
 
-fann_type * gpuann_fann_run(gpuann &data, fann_type * input)
+//returns device pointer!
+fann_type * gpuann_fann_run(gpuann &data, fann_type * d_input)
 {
   //TODO copy to device!
   gpuann_fann_run_implementation(data);
