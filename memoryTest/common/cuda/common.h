@@ -6,6 +6,7 @@
 #include <cuda.h>
 #include <builtin_types.h>
 #include <common/cuda/drvapi_error_string.h>
+#include <cuda_runtime_api.h>
 
 // Variables
 static CUdevice cuDevice;
@@ -29,7 +30,7 @@ inline void __checkCudaErrors(CUresult err, const char *file, const int line)
 inline int cudaDeviceInit()
 {
   int cuDevice = 0;
-  int dev = 0;
+  int dev = 1;
   int deviceCount = 0;
   CUresult err = cuInit(0);
 
@@ -44,7 +45,9 @@ inline int cudaDeviceInit()
     exit(EXIT_FAILURE);
   }
 
+  printf("CUDA Device count %d\n", deviceCount);
   checkCudaErrors(cuDeviceGet(&cuDevice, dev));
+  cudaSetDevice(cuDevice);
   char name[100];
   cuDeviceGetName(name, 100, cuDevice);
 
