@@ -8,4 +8,6 @@ void gpuann_fann_multirun(struct fann * ann, fann_type ** input, unsigned int in
 
 void gpuann_fann_train(struct fann *ann, fann_type * input, fann_type * desired_output);
 
+void test(fann *ann, fann_train_data* train);
+
 #endif // GPUANN_H

@@ -214,3 +214,25 @@ float gpuann_fann_train_epoch_incremental(gpuann &data, gpuannTrainData &trainDa
 
   return gpuann_fann_get_MSE(data);
 }
+
+void test(fann *ann, fann_train_data* train)
+{
+  gpuann data;
+  gpuannTrainData trainData;
+  
+  creategpuannTrainData(trainData, train);
+  creategpuann(data, ann);
+  
+  gpuann_fann_train_epoch_incremental(data, trainData);
+  gpuann_fann_train_epoch_batch(data, trainData);
+  gpuann_fann_train_epoch_sarprop(data, trainData);
+  gpuann_fann_train_epoch_irpropm(data, trainData);
+  gpuann_fann_train_epoch_quickprop(data, trainData);
+  
+  removegpuann(data);
+  removegpuannTrainData(trainData);
+}
+
+
+
+
