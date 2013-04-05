@@ -24,6 +24,7 @@ struct gpuann
 
   unsigned int _weightsCountPerInstance;
   unsigned int _neuronsCountPerInstance;
+  unsigned int _sarpropEpoch;
 };
 
 struct debugGpuann: public gpuann
