@@ -53,9 +53,9 @@ fann_type * gpuann_fann_run(struct fann * ann, fann_type * input)
 //returns device pointer!
 fann_type * gpuann_fann_run_device(gpuann &data, fann_type * d_input)
 {
-  //TODO copy to device!
+  gpuann_loadInputs(data, d_input);
   gpuann_fann_run_implementation(data);
-  //TODO receive from device!
+  return gpuann_getOutputsDevicePointer(data);
 }
 
 void gpuann_fann_multirun(struct fann * ann, fann_type ** input, unsigned int instanceCount, fann_type ** output)
@@ -208,11 +208,11 @@ float gpuann_fann_train_epoch_batch(gpuann &data, gpuannTrainData *trainData)
   {
     gpuann_fann_clear_train_arrays(data);
   }
-  
+
   gpuann_fann_reset_MSE(data);
-  
+
   const fann *ann = data._fann;
-  
+
   for(unsigned int i = 0; i < trainData->_dataCount; i++)
   {
     gpuann_fann_run_device(data, trainData->d_input + trainData->_inputCount * i);
@@ -220,9 +220,9 @@ float gpuann_fann_train_epoch_batch(gpuann &data, gpuannTrainData *trainData)
     gpuann_fann_backpropagate_MSE_implementation_gpu(data);
     gpuann_fann_update_slopes_batch_implementation(data, ann->first_layer + 1, ann->last_layer - 1);
   }
-  
+
   gpuann_fann_update_weights_batch_implementation(data, trainData->_dataCount, 0, ann->total_connections);
-  
+
   return gpuann_fann_get_MSE(data);
 }
 

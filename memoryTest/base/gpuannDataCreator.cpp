@@ -121,6 +121,19 @@ void savegpuann(const gpuann& nn, fann *ann, unsigned int instanceIndex)
   }
 }
 
+void gpuann_loadInputs(gpuann& nn, fann_type *d_inputs, unsigned int instanceIndex)
+{
+  const fann *ann = nn._fann;
+  cudaMemcpyAsync(nn.d_valuesArray + nn._neuronsCountPerInstance * instanceIndex,  d_inputs, ann->num_input * sizeof(fann_type), cudaMemcpyDeviceToDevice);
+}
+
+fann_type* gpuann_getOutputsDevicePointer(gpuann& nn, unsigned int instanceIndex)
+{
+  const fann *ann = nn._fann;
+  unsigned int outputShift = (ann->last_layer - 1)->first_neuron - ann->first_layer->first_neuron;
+  return nn.d_valuesArray + outputShift + nn._neuronsCountPerInstance * instanceIndex;
+}
+
 void createDump(gpuann &nn, debugGpuann &dnn)
 {
   const fann *ann = nn._fann;

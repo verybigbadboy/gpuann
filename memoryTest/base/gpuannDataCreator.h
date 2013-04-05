@@ -8,6 +8,9 @@ void removegpuann(gpuann& nn);
 void loadgpuann(gpuann& nn, const fann *ann, unsigned int instanceIndex = 0);
 void savegpuann(const gpuann& nn, fann *ann, unsigned int instanceIndex = 0);
 
+void gpuann_loadInputs(gpuann& nn, fann_type *d_inputs, unsigned int instanceIndex = 0);
+fann_type* gpuann_getOutputsDevicePointer(gpuann& nn, unsigned int instanceIndex = 0);
+
 void createDump(gpuann &nn, debugGpuann &dnn);
 
 void creategpuannTrainData(gpuannTrainData &trainData, fann_train_data *train);
