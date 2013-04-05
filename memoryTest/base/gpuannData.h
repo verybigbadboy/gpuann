@@ -18,6 +18,9 @@ struct gpuann
   fann_type *d_sumArray;
   fann_type *d_trainErrorsArray;
   fann_type *d_prevWeightsDeltas;
+  fann_type *d_trainSlopes;
+  fann_type *d_prevTrainSlopes;
+  fann_type *d_prevSteps;
 
   unsigned int _weightsCountPerInstance;
   unsigned int _neuronsCountPerInstance;

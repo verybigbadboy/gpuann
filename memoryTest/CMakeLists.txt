@@ -16,4 +16,9 @@ kernels/straightforward/run.cu
 kernels/computeMSE/run.cu
 kernels/updateWeights/updateWeights.cu
 kernels/backpropagateMSE/backpropagateMSErun.cu
+kernels/updateSlopesBatch/updateSlopesBatch.cu
+kernels/updateWeightsBatch/updateWeightsBatch.cu
+kernels/updateWeightsIrpropm/updateWeightsIrpropm.cu
+kernels/updateWeightsQuickprop/updateWeigthsQuickprop.cu
+kernels/updateWeightsSarprop/updateWeightsSarprop.cu
 )
