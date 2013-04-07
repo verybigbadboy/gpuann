@@ -23,49 +23,53 @@ __global__ void gpuann_fann_update_weights_sarprop_gpu_kernel(unsigned int weigh
   unsigned int blockIndex = blockIdx.x;
   unsigned int blockSize = blockDim.x;
   unsigned int instance = blockIdx.y;
-  unsigned int weightIndex = tid * blockIndex * blockSize + totalWeightsCount * instance;
+  unsigned int weightIndex = tid + blockIndex * blockSize;
+  unsigned int weightIndexInstanced = weightIndex + totalWeightsCount * instance;
 
-  fann_type prev_step, slope, prev_slope, next_step = 0, same_sign;
+  if(weightIndex < totalWeightsCount)
+  {
+    fann_type prev_step, slope, prev_slope, next_step = 0, same_sign;
 
-  /* TODO: confirm whether 1x10^-6 == delta_min is really better */
-  prev_step = fann_max(prevSteps[weightIndex], (fann_type) 0.000001);    /* prev_step may not be zero because then the training will stop */
-  /* calculate SARPROP slope; TODO: better as new error function? (see SARPROP paper)*/
-  slope = -slopes[weightIndex] - weights[weightIndex] * (fann_type)fann_exp2(-T * epoch + weight_decay_shift);
-  
-  /* TODO: is prev_train_slopes[i] 0.0 in the beginning? */
-  prev_slope = prevSlopes[weightIndex];
-  
-  same_sign = prev_slope * slope;
-  
-  if(same_sign > 0.0)
-  {
-    next_step = fann_min(prev_step * increase_factor, delta_max);
-    /* TODO: are the signs inverted? see differences between SARPROP paper and iRprop */
-    if (slope < 0.0)
-      weights[weightIndex] += next_step;
+    /* TODO: confirm whether 1x10^-6 == delta_min is really better */
+    prev_step = fann_max(prevSteps[weightIndexInstanced], (fann_type) 0.000001);    /* prev_step may not be zero because then the training will stop */
+    /* calculate SARPROP slope; TODO: better as new error function? (see SARPROP paper)*/
+    slope = -slopes[weightIndexInstanced] - weights[weightIndexInstanced] * (fann_type)fann_exp2(-T * epoch + weight_decay_shift);
+
+    /* TODO: is prev_train_slopes[i] 0.0 in the beginning? */
+    prev_slope = prevSlopes[weightIndexInstanced];
+
+    same_sign = prev_slope * slope;
+
+    if(same_sign > 0.0)
+    {
+      next_step = fann_min(prev_step * increase_factor, delta_max);
+      /* TODO: are the signs inverted? see differences between SARPROP paper and iRprop */
+      if (slope < 0.0)
+        weights[weightIndexInstanced] += next_step;
+      else
+        weights[weightIndexInstanced] -= next_step;
+    }
+    else if(same_sign < 0.0)
+    {
+      if(prev_step < step_error_threshold_factor * MSE)
+        next_step = prev_step * decrease_factor;// + (float)rand() / RAND_MAX * RMSE * (fann_type)fann_exp2(-T * epoch + step_error_shift); TODO RAND
+        else
+          next_step = fann_max(prev_step * decrease_factor, delta_min);
+        
+        slope = 0.0;
+    }
     else
-      weights[weightIndex] -= next_step;
+    {
+      if(slope < 0.0)
+        weights[weightIndexInstanced] += prev_step;
+      else
+        weights[weightIndexInstanced] -= prev_step;
+    }
+
+    prevSteps[weightIndexInstanced] = next_step;
+    prevSlopes[weightIndexInstanced] = slope;
+    slopes[weightIndexInstanced] = 0.0;
   }
-  else if(same_sign < 0.0)
-  {
-    if(prev_step < step_error_threshold_factor * MSE)
-      next_step = prev_step * decrease_factor;// + (float)rand() / RAND_MAX * RMSE * (fann_type)fann_exp2(-T * epoch + step_error_shift); TODO RAND
-    else
-      next_step = fann_max(prev_step * decrease_factor, delta_min);
-    
-    slope = 0.0;
-  }
-  else
-  {
-    if(slope < 0.0)
-      weights[weightIndex] += prev_step;
-    else
-      weights[weightIndex] -= prev_step;
-  }
-  
-  prevSteps[weightIndex] = next_step;
-  prevSlopes[weightIndex] = slope;
-  slopes[weightIndex] = 0.0;
 }
 
 void gpuann_fann_update_weights_sarprop_implementation(gpuann &data, unsigned int epoch, unsigned int first_weight, unsigned int past_end)
