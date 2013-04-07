@@ -8,6 +8,7 @@ void creategpuann(gpuann& nn, const fann *ann, unsigned int instanceCount)
   nn.d_sumArray     = 0;
   nn.d_valuesArray  = 0;
   nn.d_weightsArray = 0;
+  nn._sarpropEpoch = 0;
   nn._instanceCount = instanceCount;
 
   nn._fann = ann;
