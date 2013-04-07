@@ -12,12 +12,14 @@ __global__ void gpuann_fann_update_weights_batch_gpu_kernel(unsigned int weights
   unsigned int blockIndex = blockIdx.x;
   unsigned int blockSize = blockDim.x;
   unsigned int instance = blockIdx.y;
-  unsigned int weightIndex = tid * blockIndex * blockSize + totalWeightsCount * instance;
+
+  unsigned int weightIndex = tid + blockIndex * blockSize;
+  unsigned int weightIndexInstanced = weightIndex + totalWeightsCount * instance;
 
   if(weightIndex < weightsToUpdateCount)
   {
-    weights[weightIndex] += slopes[weightIndex] * epsilon;
-    slopes[weightIndex] = 0;
+    weights[weightIndexInstanced] += slopes[weightIndexInstanced] * epsilon;
+    slopes[weightIndexInstanced] = 0;
   }
 }
 
