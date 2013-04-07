@@ -102,7 +102,7 @@ fann *createSpecificTrainedFann(unsigned int num_hiden_layers, unsigned int num_
 
   fann_init_weights(ann, data);
 
-  fann_train_on_data(ann, data, max_epochs, epochs_between_reports, desired_error);
+  //fann_train_on_data(ann, data, max_epochs, epochs_between_reports, desired_error);
   
   test(ann, data);
 

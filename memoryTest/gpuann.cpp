@@ -215,20 +215,204 @@ float gpuann_fann_train_epoch_incremental(gpuann &data, gpuannTrainData &trainDa
   return gpuann_fann_get_MSE(data);
 }
 
+void print2arrays(unsigned int size, fann_type *f, fann_type *s)
+{
+  printf("ololo\n");
+  for(unsigned int i = 0; i < size; ++i)
+  {
+    printf("%10.3f %10.3f\n", f[i], s[i]);
+  }
+}
+
+void fann_update_slopes_batch1(struct fann *ann, struct fann_layer *layer_begin, struct fann_layer *layer_end)
+{
+  struct fann_neuron *neuron_it, *last_neuron, *prev_neurons;
+  fann_type tmp_error;
+  unsigned int i, num_connections;
+
+  if(ann->train_slopes == NULL)
+  {
+    ann->train_slopes =
+    (fann_type *) calloc(ann->total_connections_allocated, sizeof(fann_type));
+    if(ann->train_slopes == NULL)
+    {
+      fann_error((struct fann_error *) ann, FANN_E_CANT_ALLOCATE_MEM);
+      return;
+    }
+  }
+
+  struct fann_neuron *first_neuron = ann->first_layer->first_neuron;
+  fann_type *error_begin = ann->train_errors;
+  fann_type *slope_begin, *neuron_slope;
+
+  slope_begin = ann->train_slopes;
+
+  prev_neurons = first_neuron;
+
+  for(; layer_begin <= layer_end; layer_begin++)
+  {
+    last_neuron = layer_begin->last_neuron;
+    prev_neurons = (layer_begin - 1)->first_neuron;
+
+    for(neuron_it = layer_begin->first_neuron; neuron_it != last_neuron; neuron_it++)
+    {
+      tmp_error = error_begin[neuron_it - first_neuron];
+      neuron_slope = slope_begin + neuron_it->first_con;
+      num_connections = neuron_it->last_con - neuron_it->first_con;
+      for(i = 0; i != num_connections; i++)
+      {
+        neuron_slope[i] += tmp_error * prev_neurons[i].value;
+      }
+    }
+  }
+}
+
+float fann_train_epoch_batch(struct fann *ann, struct fann_train_data *data)
+{
+  unsigned int i;
+
+  fann_reset_MSE(ann);
+
+  for(i = 0; i < data->num_data; i++)
+  {
+    fann_run(ann, data->input[i]);
+    fann_compute_MSE(ann, data->output[i]);
+    fann_backpropagate_MSE(ann);
+    fann_update_slopes_batch1(ann, ann->first_layer + 1, ann->last_layer - 1);
+  }
+
+  fann_update_weights_batch(ann, data->num_data, 0, ann->total_connections);
+
+  return fann_get_MSE(ann);
+}
+
+float fann_train_epoch_sarprop(struct fann *ann, struct fann_train_data *data)
+{
+  unsigned int i;
+
+  if(ann->prev_train_slopes == NULL)
+  {
+    fann_clear_train_arrays(ann);
+  }
+
+  fann_reset_MSE(ann);
+
+  for(i = 0; i < data->num_data; i++)
+  {
+    fann_run(ann, data->input[i]);
+    fann_compute_MSE(ann, data->output[i]);
+    fann_backpropagate_MSE(ann);
+    fann_update_slopes_batch(ann, ann->first_layer + 1, ann->last_layer - 1);
+  }
+
+  fann_update_weights_sarprop(ann, ann->sarprop_epoch, 0, ann->total_connections);
+
+  ++(ann->sarprop_epoch);
+
+  return fann_get_MSE(ann);
+}
+
+float fann_train_epoch_irpropm(struct fann *ann, struct fann_train_data *data)
+{
+  unsigned int i;
+
+  if(ann->prev_train_slopes == NULL)
+  {
+    fann_clear_train_arrays(ann);
+  }
+
+  fann_reset_MSE(ann);
+
+  for(i = 0; i < data->num_data; i++)
+  {
+    fann_run(ann, data->input[i]);
+    fann_compute_MSE(ann, data->output[i]);
+    fann_backpropagate_MSE(ann);
+    fann_update_slopes_batch(ann, ann->first_layer + 1, ann->last_layer - 1);
+  }
+
+  fann_update_weights_irpropm(ann, 0, ann->total_connections);
+
+  return fann_get_MSE(ann);
+}
+
+float fann_train_epoch_quickprop(struct fann *ann, struct fann_train_data *data)
+{
+  unsigned int i;
+
+  if(ann->prev_train_slopes == NULL)
+  {
+    fann_clear_train_arrays(ann);
+  }
+
+  fann_reset_MSE(ann);
+
+  for(i = 0; i < data->num_data; i++)
+  {
+    fann_run(ann, data->input[i]);
+    fann_compute_MSE(ann, data->output[i]);
+    fann_backpropagate_MSE(ann);
+    fann_update_slopes_batch(ann, ann->first_layer + 1, ann->last_layer - 1);
+  }
+  fann_update_weights_quickprop(ann, data->num_data, 0, ann->total_connections);
+
+  return fann_get_MSE(ann);
+}
+
 void test(fann *ann, fann_train_data* train)
 {
   gpuann data;
   gpuannTrainData trainData;
-  
+  debugGpuann dump[10];
+
   creategpuannTrainData(trainData, train);
+
+  (ann->first_layer->last_neuron - 1)->value = 1; ///TODO WHY?
   creategpuann(data, ann);
-  
+  loadgpuann(data, ann);
+
+  createDump(data, dump[0]);
+
+/*
   gpuann_fann_train_epoch_incremental(data, trainData);
+  createDump(data, dump[1]);
+
+  fann_train(ann, train->input[0], train->output[0]);
+  fann_train(ann, train->input[1], train->output[1]);
+  fann_train(ann, train->input[2], train->output[2]);
+  fann_train(ann, train->input[3], train->output[3]);
+
+  print2arrays(data._neuronsCountPerInstance, ann->train_errors, dump[1].d_trainErrorsArray);
+  print2arrays(data._weightsCountPerInstance, ann->weights, dump[1].d_weightsArray);
+*/
+
+/*
+  fann_train_epoch_batch(ann, train);
   gpuann_fann_train_epoch_batch(data, trainData);
+  createDump(data, dump[2]);
+  print2arrays(data._weightsCountPerInstance, ann->weights, dump[2].d_weightsArray);
+  //print2arrays(data._weightsCountPerInstance, ann->train_slopes, dump[2].d_trainSlopes);
+*/
+
+/*
   gpuann_fann_train_epoch_sarprop(data, trainData);
+  createDump(data, dump[3]);
+  fann_train_epoch_sarprop(ann, train);
+  print2arrays(data._weightsCountPerInstance, ann->weights, dump[3].d_weightsArray);
+*/
+
+/*
   gpuann_fann_train_epoch_irpropm(data, trainData);
+  createDump(data, dump[4]);
+  fann_train_epoch_irpropm(ann, train);
+  print2arrays(data._weightsCountPerInstance, ann->weights, dump[4].d_weightsArray);
+*/
+/*
   gpuann_fann_train_epoch_quickprop(data, trainData);
-  
+  createDump(data, dump[5]);
+  fann_train_epoch_quickprop(ann, train);
+  print2arrays(data._weightsCountPerInstance, ann->weights, dump[5].d_weightsArray);
+*/
   removegpuann(data);
   removegpuannTrainData(trainData);
 }
