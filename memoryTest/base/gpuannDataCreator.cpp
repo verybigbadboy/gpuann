@@ -146,6 +146,9 @@ void createDump(gpuann &nn, debugGpuann &dnn)
   dnn.d_trainErrorsArray = new fann_type[neuronCount];
   dnn.d_weightsArray = new fann_type[weightsCount];
   dnn.d_prevWeightsDeltas = new fann_type[weightsCount];
+  dnn.d_trainSlopes = new fann_type[weightsCount];
+  dnn.d_prevTrainSlopes = new fann_type[weightsCount];
+  dnn.d_prevSteps = new fann_type[weightsCount];
 
   cudaThreadSynchronize();
 
@@ -197,6 +200,34 @@ void createDump(gpuann &nn, debugGpuann &dnn)
     printf("CUDA error: %s\n", cudaGetErrorString(error));
     exit(-1);
   }
+  
+  cudaMemcpy(dnn.d_trainSlopes,         nn.d_trainSlopes, weightsCount * sizeof(fann_type), cudaMemcpyDeviceToHost);
+  error = cudaGetLastError();
+  if(error != cudaSuccess)
+  {
+    // print the CUDA error message and exit
+    printf("CUDA error: %s\n", cudaGetErrorString(error));
+    exit(-1);
+  }
+  
+  cudaMemcpy(dnn.d_prevTrainSlopes,         nn.d_prevTrainSlopes, weightsCount * sizeof(fann_type), cudaMemcpyDeviceToHost);
+  error = cudaGetLastError();
+  if(error != cudaSuccess)
+  {
+    // print the CUDA error message and exit
+    printf("CUDA error: %s\n", cudaGetErrorString(error));
+    exit(-1);
+  }
+  
+  cudaMemcpy(dnn.d_prevSteps,         nn.d_prevSteps, weightsCount * sizeof(fann_type), cudaMemcpyDeviceToHost);
+  error = cudaGetLastError();
+  if(error != cudaSuccess)
+  {
+    // print the CUDA error message and exit
+    printf("CUDA error: %s\n", cudaGetErrorString(error));
+    exit(-1);
+  }
+
   cudaThreadSynchronize();
 }
 
