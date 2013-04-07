@@ -13,13 +13,14 @@ __global__ void gpuann_fann_update_weights_irpropm_gpu_kernel(unsigned int weigh
   unsigned int blockIndex = blockIdx.x;
   unsigned int blockSize = blockDim.x;
   unsigned int instance = blockIdx.y;
-  unsigned int weightIndex = tid * blockIndex * blockSize + totalWeightsCount * instance;
+  unsigned int weightIndex = tid + blockIndex * blockSize;
+  unsigned int weightIndexInstanced = weightIndex + totalWeightsCount * instance;
 
   if(weightIndex < weightsToUpdateCount)
   {
-    fann_type prevStep = fann_max(prevSteps[weightIndex], (fann_type) 0.0001);    /* prevStep may not be zero because then the training will stop */
-    fann_type slope = slopes[weightIndex];
-    fann_type prevSlope = prevSlopes[weightIndex];
+    fann_type prevStep = fann_max(prevSteps[weightIndexInstanced], (fann_type) 0.0001);    /* prevStep may not be zero because then the training will stop */
+    fann_type slope = slopes[weightIndexInstanced];
+    fann_type prevSlope = prevSlopes[weightIndexInstanced];
     fann_type nextStep;
     
     float sameSign = prevSlope * slope;
@@ -34,20 +35,20 @@ __global__ void gpuann_fann_update_weights_irpropm_gpu_kernel(unsigned int weigh
     
     if(slope < 0)
     {
-      weights[weightIndex] -= nextStep;
-      if(weights[weightIndex] < -1500)
-        weights[weightIndex] = -1500;
+      weights[weightIndexInstanced] -= nextStep;
+      if(weights[weightIndexInstanced] < -1500)
+        weights[weightIndexInstanced] = -1500;
     }
     else
     {
-      weights[weightIndex] += nextStep;
-      if(weights[weightIndex] > 1500)
-        weights[weightIndex] = 1500;
+      weights[weightIndexInstanced] += nextStep;
+      if(weights[weightIndexInstanced] > 1500)
+        weights[weightIndexInstanced] = 1500;
     }
     
-    prevSteps[weightIndex] = nextStep;
-    prevSlopes[weightIndex] = slope;
-    slopes[weightIndex] = 0.0;
+    prevSteps[weightIndexInstanced] = nextStep;
+    prevSlopes[weightIndexInstanced] = slope;
+    slopes[weightIndexInstanced] = 0.0;
   }
 }
 
