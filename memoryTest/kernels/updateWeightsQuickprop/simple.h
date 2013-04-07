@@ -13,57 +13,61 @@ __global__ void gpuann_fann_update_weights_quickprop_gpu_kernel(unsigned int wei
   unsigned int blockIndex = blockIdx.x;
   unsigned int blockSize = blockDim.x;
   unsigned int instance = blockIdx.y;
-  unsigned int weightIndex = tid * blockIndex * blockSize + totalWeightsCount * instance;
+  unsigned int weightIndex = tid + blockIndex * blockSize;
+  unsigned int weightIndexInstanced = weightIndex + totalWeightsCount * instance;
 
-  fann_type w, prevStep, slope, prevSlope, nextStep;
-  w = weights[weightIndex];
-  prevStep = prevSteps[weightIndex];
-  slope = slopes[weightIndex] + decay * w;
-  prevSlope = prevSlopes[weightIndex];
-  nextStep = 0.0;
-  
-  /* The step must always be in direction opposite to the slope. */
-  if(prevStep > 0.001)
+  if(weightIndex < totalWeightsCount)
   {
-    /* If last step was positive...  */
-    if(slope > 0.0) /*  Add in linear term if current slope is still positive. */
+    fann_type w, prevStep, slope, prevSlope, nextStep;
+    w = weights[weightIndexInstanced];
+    prevStep = prevSteps[weightIndexInstanced];
+    slope = slopes[weightIndexInstanced] + decay * w;
+    prevSlope = prevSlopes[weightIndexInstanced];
+    nextStep = 0.0;
+
+    /* The step must always be in direction opposite to the slope. */
+    if(prevStep > 0.001)
+    {
+      /* If last step was positive...  */
+      if(slope > 0.0) /*  Add in linear term if current slope is still positive. */
+        nextStep += epsilon * slope;
+
+      /*If current slope is close to or larger than prev slope...  */
+      if(slope > ((float) (mu / (1.0 + mu))  * prevSlope))
+        nextStep += mu * prevStep;    /* Take maximum size negative step. */
+        else
+          nextStep += prevStep * slope / (prevSlope - slope);    /* Else, use quadratic estimate. */
+    }
+    else if(prevStep < -0.001)
+    {
+      /* If last step was negative...  */
+      if(slope < 0.0) /*  Add in linear term if current slope is still negative. */
+        nextStep += epsilon * slope;
+
+      /* If current slope is close to or more neg than prev slope... */
+      if(slope < ((float) (mu / (1.0 + mu))  * prevSlope))
+        nextStep += mu * prevStep;    /* Take maximum size negative step. */
+        else
+          nextStep += prevStep * slope / (prevSlope - slope);    /* Else, use quadratic estimate. */
+    }
+    else /* Last step was zero, so use only linear term. */
       nextStep += epsilon * slope;
-    
-    /*If current slope is close to or larger than prev slope...  */
-    if(slope > ((float) (mu / (1.0 + mu))  * prevSlope))
-      nextStep += mu * prevStep;    /* Take maximum size negative step. */
-      else
-        nextStep += prevStep * slope / (prevSlope - slope);    /* Else, use quadratic estimate. */
+
+    prevSteps[weightIndexInstanced] = nextStep;
+
+    w += nextStep;
+
+    if(w > 1500)
+      weights[weightIndexInstanced] = 1500;
+    else if(w < -1500)
+      weights[weightIndexInstanced] = -1500;
+    else
+      weights[weightIndexInstanced] = w;
+
+
+    prevSlopes[weightIndexInstanced] = slope;
+    slopes[weightIndexInstanced] = 0.0;
   }
-  else if(prevStep < -0.001)
-  {
-    /* If last step was negative...  */
-    if(slope < 0.0) /*  Add in linear term if current slope is still negative. */
-      nextStep += epsilon * slope;
-    
-    /* If current slope is close to or more neg than prev slope... */
-    if(slope < ((float) (mu / (1.0 + mu))  * prevSlope))
-      nextStep += mu * prevStep;    /* Take maximum size negative step. */
-      else
-        nextStep += prevStep * slope / (prevSlope - slope);    /* Else, use quadratic estimate. */
-  }
-  else /* Last step was zero, so use only linear term. */
-    nextStep += epsilon * slope;
-  
-  prevSteps[weightIndex] = nextStep;
-  
-  w += nextStep;
-  
-  if(w > 1500)
-    weights[weightIndex] = 1500;
-  else if(w < -1500)
-    weights[weightIndex] = -1500;
-  else
-    weights[weightIndex] = w;
-  
-  
-  prevSlopes[weightIndex] = slope;
-  slopes[weightIndex] = 0.0;
 }
 
 void gpuann_fann_update_weights_quickprop_implementation(gpuann &data, unsigned int num_data, unsigned int first_weight, unsigned int past_end)
