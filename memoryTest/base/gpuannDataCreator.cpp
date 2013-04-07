@@ -93,6 +93,15 @@ void loadgpuann(gpuann& nn, const fann *ann, unsigned int instanceIndex)
   cudaMemcpyAsync(nn.d_sumArray + neuronCount * instanceIndex,     nn.h_tmp_sumArray,    neuronCount  * sizeof(fann_type), cudaMemcpyHostToDevice);
   cudaMemcpyAsync(nn.d_valuesArray + neuronCount * instanceIndex,  nn.h_tmp_valuesArray, neuronCount  * sizeof(fann_type), cudaMemcpyHostToDevice);
   cudaMemcpyAsync(nn.d_weightsArray + weightsCount * instanceIndex, ann->weights,        weightsCount * sizeof(fann_type), cudaMemcpyHostToDevice);
+
+  if(ann->training_algorithm == FANN_TRAIN_RPROP)
+  {
+    float array[weightsCount];
+    for(int i = 0; i < weightsCount; ++i)
+      array[i] = ann->rprop_delta_zero;
+
+    cudaMemcpyAsync(nn.d_prevSteps + weightsCount * instanceIndex, array, weightsCount * sizeof(fann_type), cudaMemcpyHostToDevice);
+  }
 }
 
 void savegpuann(const gpuann& nn, fann *ann, unsigned int instanceIndex)
