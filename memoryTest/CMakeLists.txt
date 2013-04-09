@@ -8,11 +8,14 @@ link_directories(/home/bad/projects/fann-code/build/src/)
 link_libraries(floatfann)
 CUDA_ADD_EXECUTABLE(memoryTest
 gpuann.cpp
+gpuannTrain.cpp
 base/gpuannDataCreator.cpp
 base/neuralNetworkTypeCheck.cpp
 test.cpp
 testing/testing.cpp
-kernels/straightforward/run.cu
+testing/train.cpp
+kernels/straightforward/straightforward.cu
+kernels/straightforward/straightforward.cpp
 kernels/computeMSE/run.cu
 kernels/updateWeights/updateWeights.cu
 kernels/backpropagateMSE/backpropagateMSErun.cu
