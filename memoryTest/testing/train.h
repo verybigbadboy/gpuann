@@ -3,6 +3,6 @@
 
 #include <fann.h>
 
-void test(fann *ann, fann_train_data* train);
+void testTrainMethods(fann *ann, fann_train_data* train);
 
 #endif // TESTING_TRAIN_H

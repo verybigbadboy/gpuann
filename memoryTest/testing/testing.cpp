@@ -2,6 +2,7 @@
 #include <testing/train.h>
 #include <gpuann.h>
 
+
 void printannsum(struct fann *ann)
 {
   struct fann_layer *last_layer = ann->last_layer;
@@ -33,6 +34,15 @@ void printannvalue(struct fann *ann)
       printf("%f ", neuron_it->value);
     }
     printf("\n");
+  }
+}
+
+void print2arrays(unsigned int size, fann_type *f, fann_type *s)
+{
+  printf("ololo\n");
+  for(unsigned int i = 0; i < size; ++i)
+  {
+    printf("%10.3f %10.3f\n", f[i], s[i]);
   }
 }
 
@@ -105,7 +115,7 @@ fann *createSpecificTrainedFann(unsigned int num_hiden_layers, unsigned int num_
 
   fann_train_on_data(ann, data, max_epochs, epochs_between_reports, desired_error);
   
-  test(ann, data);
+  testTrainMethods(ann, data);
 
   fann_destroy_train(data);
 

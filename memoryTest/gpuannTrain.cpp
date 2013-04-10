@@ -20,6 +20,7 @@ void gpuann_fann_reset_MSE(gpuann &data)
 float gpuann_fann_get_MSE(gpuann &data)
 {
   //TODO
+  return 0;
 }
 
 float gpuann_fann_train_epoch_quickprop(gpuann &data, gpuannTrainData &trainData)
