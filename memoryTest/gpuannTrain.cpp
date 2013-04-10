@@ -41,6 +41,24 @@ float gpuann_fann_train_epoch_quickprop(gpuann &data, gpuannTrainData &trainData
   return gpuann_fann_get_MSE(data);
 }
 
+float gpuann_fann_train_epoch_quickprop_parralel(gpuann &data, gpuannTrainData &trainData)
+{
+  gpuann_fann_reset_MSE(data);
+
+  const fann *ann = data._fann;
+
+  for(unsigned int i = 0; i < trainData._dataCount; i++)
+  {
+    gpuann_fann_run_device(data, trainData.d_input + trainData._inputCount * i);
+    gpuann_fann_compute_MSE_implementation_gpu(data, trainData.d_output + trainData._outputCount * i);
+    gpuann_fann_backpropagate_MSE_implementation_gpu(data);
+    gpuann_fann_update_slopes_batch_implementation(data, ann->first_layer + 1, ann->last_layer - 1);
+  }
+  gpuann_fann_update_weights_quickprop_implementation(data, trainData._dataCount, 0, data._weightsCountPerInstance);
+
+  return gpuann_fann_get_MSE(data);
+}
+
 float gpuann_fann_train_epoch_irpropm(gpuann &data, gpuannTrainData &trainData)
 {
   gpuann_fann_reset_MSE(data);

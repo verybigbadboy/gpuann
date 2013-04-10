@@ -5,6 +5,8 @@
 
 void creategpuann(gpuann& nn, const fann *ann, unsigned int instanceCount = 1);
 void removegpuann(gpuann& nn);
+void copygpuann(gpuann& to, gpuann from, unsigned int fromInstance = 0, unsigned int toInstance = 0, unsigned int instanceCount = 1);
+
 void loadgpuann(gpuann& nn, const fann *ann, unsigned int instanceIndex = 0);
 void savegpuann(const gpuann& nn, fann *ann, unsigned int instanceIndex = 0);
 
