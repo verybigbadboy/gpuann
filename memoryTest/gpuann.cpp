@@ -5,12 +5,8 @@
 #include <kernels/backpropagateMSE/backpropagateMSErun.h>
 #include <kernels/computeMSE/run.h>
 #include <kernels/straightforward/straightforward.h>
-#include <kernels/updateSlopesBatch/updateSlopesBatch.h>
 #include <kernels/updateWeights/updateWeights.h>
-#include <kernels/updateWeightsBatch/updateWeightsBatch.h>
-#include <kernels/updateWeightsIrpropm/updateWeightsIrpropm.h>
-#include <kernels/updateWeightsQuickprop/updateWeigthsQuickprop.h>
-#include <kernels/updateWeightsSarprop/updateWeightsSarprop.h>
+#include <gpuannTrain.h>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -104,4 +100,54 @@ void gpuann_fann_train(struct fann *ann, fann_type * input, fann_type * desired_
   savegpuann(gann, ann);
 
   removegpuann(gann);
+}
+
+void gpuann_fann_train_on_data(struct fann *ann, struct fann_train_data *train, unsigned int maxEpochs, unsigned int epochsBetweenReports, float desiredError)
+{
+  float error;
+  unsigned int i;
+  int desiredErrorReached;
+
+  if(epochsBetweenReports && ann->callback == NULL)
+  {
+    printf("Max epochs %8d. Desired error: %.10f.\n", maxEpochs, desiredError);
+  }
+
+  gpuann data;
+  gpuannTrainData trainData;
+
+  creategpuannTrainData(trainData, train);
+
+  (ann->first_layer->last_neuron - 1)->value = 1; ///bias input TODO!
+  creategpuann(data, ann);
+  loadgpuann(data, ann);
+
+  for(i = 1; i <= maxEpochs; i++)
+  {
+    error = gpuann_fann_train_epoch(data, trainData);
+    //TODO
+    //desired_error_reached = fann_desired_error_reached(ann, desiredError);
+
+    /*
+    if(epochs_between_reports && (i % epochs_between_reports == 0 || i == max_epochs || i == 1 || desired_error_reached == 0))
+    {
+      if(ann->callback == NULL)
+      {
+        printf("Epochs     %8d. Current error: %.10f. Bit fail %d.\n", i, error, ann->num_bit_fail);
+      }
+      else if(((*ann->callback)(ann, data, max_epochs, epochs_between_reports, desired_error, i)) == -1)
+      {
+        break;
+      }
+    }
+    */
+
+    if(desiredErrorReached == 0)
+      break;
+  }
+
+  savegpuann(data, ann);
+
+  removegpuann(data);
+  removegpuannTrainData(trainData);
 }
