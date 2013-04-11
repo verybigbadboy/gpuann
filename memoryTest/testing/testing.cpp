@@ -113,9 +113,10 @@ fann *createSpecificTrainedFann(unsigned int num_hiden_layers, unsigned int num_
 
   fann_init_weights(ann, data);
 
-  fann_train_on_data(ann, data, max_epochs, epochs_between_reports, desired_error);
+  //fann_train_on_data(ann, data, max_epochs, epochs_between_reports, desired_error);
 
-  testTrainMethods(ann, data);
+  for(int i = 0; i < 10; ++i)
+    testTrainMethods(ann, data);
 
   fann_destroy_train(data);
 
@@ -144,15 +145,6 @@ bool runTest(struct fann *ann, fann_type * input, const char * testName, bool fu
     printf("CPU xor test (%f,%f) -> %f\n", input[0], input[1], calc_out[0]);
 
   bool success = (calc_out_cpu - calc_out_gpu) * (calc_out_cpu - calc_out_gpu) < 0.001;
-
-  fann_type want = 0;
-  gpuann_fann_train(ann, input, &want);
-
-  calc_out = fann_run(ann, input);
-  calc_out_cpu = calc_out[0];
-
-  if(!fullreport)
-    printf("gPU TRAIN xor test (%f,%f) -> %f\n", input[0], input[1], calc_out[0]);
 
   if(!fullreport)
     if(success)
@@ -192,6 +184,7 @@ void fulltest()
   {
     for(int j = 30; j < 512; j *=2)
     {
+      printf("Neural network type: %d %d\n", i, j);
       fann *ann = createSpecificTrainedFann(i, j);
       runTests(ann);
       fann_destroy(ann);
