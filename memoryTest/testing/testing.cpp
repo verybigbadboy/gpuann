@@ -114,7 +114,7 @@ fann *createSpecificTrainedFann(unsigned int num_hiden_layers, unsigned int num_
   fann_init_weights(ann, data);
 
   fann_train_on_data(ann, data, max_epochs, epochs_between_reports, desired_error);
-  
+
   testTrainMethods(ann, data);
 
   fann_destroy_train(data);
@@ -153,10 +153,7 @@ bool runTest(struct fann *ann, fann_type * input, const char * testName, bool fu
 
   if(!fullreport)
     printf("gPU TRAIN xor test (%f,%f) -> %f\n", input[0], input[1], calc_out[0]);
-  
-  //printann(ann);
 
-  
   if(!fullreport)
     if(success)
       printf("Passed\n");

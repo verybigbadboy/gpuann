@@ -42,8 +42,6 @@ void runTestMultiRun(struct fann *ann)
 
 int main()
 {
-  printf("sizes %d %d %d", sizeof(fann_type), sizeof(float), sizeof(double));
-
   cudaDeviceInit();
 
   fulltest();

@@ -59,7 +59,7 @@ __device__ inline void gpuann_fann_compute_MSE_implementation_gpu_kernel(unsigne
   if(tid < layerSize)
   {
     unsigned int neuronIndex = tid + instance * totalNeuronsCount;
-    fann_type neuronDiff = desiredOutput[neuronIndex] - neuronValues[neuronIndex];
+    fann_type neuronDiff = desiredOutput[tid + layerSize * instance] - neuronValues[neuronIndex];
 
     neuronDiff = gpuann_fann_update_MSE<layerActivationFunction>(neuronDiff);
 

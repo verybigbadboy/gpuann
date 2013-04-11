@@ -20,6 +20,11 @@ void testTrainMethods(fann *ann, fann_train_data* train)
   gpuann_fann_train_epoch_irpropm(data, trainData);
   gpuann_fann_train_epoch_quickprop(data, trainData);
 
+  gpuann_fann_train_epoch_batch_parralel(data, trainData);
+  gpuann_fann_train_epoch_sarprop_parralel(data, trainData);
+  gpuann_fann_train_epoch_irpropm_parralel(data, trainData);
+  gpuann_fann_train_epoch_quickprop_parralel(data, trainData);
+
   removegpuann(data);
   removegpuannTrainData(trainData);
 }

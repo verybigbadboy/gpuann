@@ -30,7 +30,7 @@ inline void __checkCudaErrors(CUresult err, const char *file, const int line)
 inline int cudaDeviceInit()
 {
   int cuDevice = 0;
-  int dev = 1;
+  int dev = 0;
   int deviceCount = 0;
   CUresult err = cuInit(0);
 

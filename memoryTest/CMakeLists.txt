@@ -14,12 +14,13 @@ base/neuralNetworkTypeCheck.cpp
 test.cpp
 testing/testing.cpp
 testing/train.cpp
-kernels/straightforward/straightforward.cu
-kernels/straightforward/straightforward.cpp
-kernels/computeMSE/run.cu
-kernels/updateWeights/updateWeights.cu
 kernels/backpropagateMSE/backpropagateMSErun.cu
+kernels/computeMSE/run.cu
+kernels/mergeSlopes/mergeSlopes.cu
+kernels/straightforward/straightforward.cpp
+kernels/straightforward/straightforward.cu
 kernels/updateSlopesBatch/updateSlopesBatch.cu
+kernels/updateWeights/updateWeights.cu
 kernels/updateWeightsBatch/updateWeightsBatch.cu
 kernels/updateWeightsIrpropm/updateWeightsIrpropm.cu
 kernels/updateWeightsQuickprop/updateWeigthsQuickprop.cu
