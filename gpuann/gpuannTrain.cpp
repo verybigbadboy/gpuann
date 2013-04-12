@@ -41,40 +41,73 @@ void gpuann_fann_train_epoch_base(gpuann &data, gpuannTrainData &trainData)
   }
 }
 
-void gpuann_fann_train_parralel_update_slopes(gpuann &data, gpuannTrainData &trainData)
+float gpuann_fann_train_epoch_quickprop(gpuann &data, gpuannTrainData &trainData)
 {
-  gpuann_fann_reset_MSE(data);
+  gpuann_fann_train_epoch_base(data, trainData);
+  gpuann_fann_update_weights_quickprop_implementation(data, trainData._dataCount, 0, data._weightsCountPerInstance);
+  return gpuann_fann_get_MSE(data);
+}
 
+
+float gpuann_fann_train_epoch_irpropm(gpuann &data, gpuannTrainData &trainData)
+{
+  gpuann_fann_train_epoch_base(data, trainData);
+  gpuann_fann_update_weights_irpropm_implementation(data, 0, data._weightsCountPerInstance);
+  return gpuann_fann_get_MSE(data);
+}
+
+float gpuann_fann_train_epoch_sarprop(gpuann &data, gpuannTrainData &trainData)
+{
+  gpuann_fann_train_epoch_base(data, trainData);
+  gpuann_fann_update_weights_sarprop_implementation(data, data._sarpropEpoch, 0, data._weightsCountPerInstance);
+  ++(data._sarpropEpoch);
+  return gpuann_fann_get_MSE(data);
+}
+
+float gpuann_fann_train_epoch_batch(gpuann &data, gpuannTrainData &trainData)
+{
+  gpuann_fann_train_epoch_base(data, trainData);
+  gpuann_fann_update_weights_batch_implementation(data, trainData._dataCount, 0, data._weightsCountPerInstance);
+  return gpuann_fann_get_MSE(data);
+}
+
+/*------------------PARRALEL TRAIN------------*/
+
+void gpuann_fann_train_parralel_multi_update_slopes(gpuann &multidata, gpuannTrainData &trainData)
+{
+  const fann *ann = multidata._fann;
+
+  gpuann_fann_run_implementation(multidata);
+  gpuann_fann_compute_MSE_implementation_gpu(multidata, trainData.d_output);
+  gpuann_fann_backpropagate_MSE_implementation_gpu(multidata);
+  gpuann_fann_update_slopes_batch_implementation(multidata, ann->first_layer + 1, ann->last_layer - 1);
+}
+
+void gpuann_create_multidata(gpuann &multidata, gpuann &data, gpuannTrainData &trainData)
+{
   const fann *ann = data._fann;
 
   unsigned int instanceCount = trainData._dataCount;
 
-  gpuann multidata;
   creategpuann(multidata, ann, instanceCount);
   for(unsigned int i = 0; i < instanceCount; i++)
   {
     copygpuann(multidata, data, 0, i);
     gpuann_loadInputs(multidata, trainData.d_input + trainData._inputCount * i, i);
   }
+}
 
-  gpuann_fann_run_implementation(multidata);
-  gpuann_fann_compute_MSE_implementation_gpu(multidata, trainData.d_output);
-  gpuann_fann_backpropagate_MSE_implementation_gpu(multidata);
-  gpuann_fann_update_slopes_batch_implementation(multidata, ann->first_layer + 1, ann->last_layer - 1);
+void gpuann_fann_train_parralel_update_slopes(gpuann &data, gpuannTrainData &trainData)
+{
+  gpuann_fann_reset_MSE(data);
 
+  gpuann multidata;
+  gpuann_create_multidata(multidata, data ,trainData);
+  gpuann_fann_train_parralel_multi_update_slopes(multidata, trainData);
   gpuann_merge_slopes_implementation(multidata);
   copygpuann(data, multidata);
 
   removegpuann(multidata);
-}
-
-float gpuann_fann_train_epoch_quickprop(gpuann &data, gpuannTrainData &trainData)
-{
-  gpuann_fann_train_epoch_base(data, trainData);
-
-  gpuann_fann_update_weights_quickprop_implementation(data, trainData._dataCount, 0, data._weightsCountPerInstance);
-
-  return gpuann_fann_get_MSE(data);
 }
 
 float gpuann_fann_train_epoch_quickprop_parralel(gpuann &data, gpuannTrainData &trainData)
@@ -82,15 +115,6 @@ float gpuann_fann_train_epoch_quickprop_parralel(gpuann &data, gpuannTrainData &
   gpuann_fann_train_parralel_update_slopes(data, trainData);
 
   gpuann_fann_update_weights_quickprop_implementation(data, trainData._dataCount, 0, data._weightsCountPerInstance);
-
-  return gpuann_fann_get_MSE(data);
-}
-
-float gpuann_fann_train_epoch_irpropm(gpuann &data, gpuannTrainData &trainData)
-{
-  gpuann_fann_train_epoch_base(data, trainData);
-
-  gpuann_fann_update_weights_irpropm_implementation(data, 0, data._weightsCountPerInstance);
 
   return gpuann_fann_get_MSE(data);
 }
@@ -104,13 +128,11 @@ float gpuann_fann_train_epoch_irpropm_parralel(gpuann &data, gpuannTrainData &tr
   return gpuann_fann_get_MSE(data);
 }
 
-float gpuann_fann_train_epoch_sarprop(gpuann &data, gpuannTrainData &trainData)
+float gpuann_fann_train_epoch_batch_parralel(gpuann &data, gpuannTrainData &trainData)
 {
-  gpuann_fann_train_epoch_base(data, trainData);
+  gpuann_fann_train_parralel_update_slopes(data, trainData);
 
-  gpuann_fann_update_weights_sarprop_implementation(data, data._sarpropEpoch, 0, data._weightsCountPerInstance);
-
-  ++(data._sarpropEpoch);
+  gpuann_fann_update_weights_batch_implementation(data, trainData._dataCount, 0, data._weightsCountPerInstance);
 
   return gpuann_fann_get_MSE(data);
 }
@@ -122,24 +144,6 @@ float gpuann_fann_train_epoch_sarprop_parralel(gpuann &data, gpuannTrainData &tr
   gpuann_fann_update_weights_sarprop_implementation(data, data._sarpropEpoch, 0, data._weightsCountPerInstance);
 
   ++(data._sarpropEpoch);
-
-  return gpuann_fann_get_MSE(data);
-}
-
-float gpuann_fann_train_epoch_batch(gpuann &data, gpuannTrainData &trainData)
-{
-  gpuann_fann_train_epoch_base(data, trainData);
-
-  gpuann_fann_update_weights_batch_implementation(data, trainData._dataCount, 0, data._weightsCountPerInstance);
-
-  return gpuann_fann_get_MSE(data);
-}
-
-float gpuann_fann_train_epoch_batch_parralel(gpuann &data, gpuannTrainData &trainData)
-{
-  gpuann_fann_train_parralel_update_slopes(data, trainData);
-
-  gpuann_fann_update_weights_batch_implementation(data, trainData._dataCount, 0, data._weightsCountPerInstance);
 
   return gpuann_fann_get_MSE(data);
 }
