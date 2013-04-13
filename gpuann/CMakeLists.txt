@@ -14,6 +14,7 @@ base/neuralNetworkTypeCheck.cpp
 test.cpp
 testing/testing.cpp
 testing/train.cpp
+testing/util.cpp
 kernels/backpropagateMSE/backpropagateMSErun.cu
 kernels/computeMSE/run.cu
 kernels/mergeSlopes/mergeSlopes.cu

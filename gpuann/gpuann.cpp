@@ -103,16 +103,10 @@ void gpuann_fann_train(struct fann *ann, fann_type * input, fann_type * desired_
   removegpuann(gann);
 }
 
-void gpuann_fann_train_on_data(struct fann *ann, struct fann_train_data *train, unsigned int maxEpochs, unsigned int epochsBetweenReports, float desiredError)
+void gpuann_fann_train_on_data(struct fann *ann, struct fann_train_data *train, unsigned int maxEpochs)
 {
   float error;
   unsigned int i;
-  int desiredErrorReached;
-
-  if(epochsBetweenReports && ann->callback == NULL)
-  {
-    printf("Max epochs %8d. Desired error: %.10f.\n", maxEpochs, desiredError);
-  }
 
   gpuann data;
   gpuannTrainData trainData;
@@ -141,10 +135,10 @@ void gpuann_fann_train_on_data(struct fann *ann, struct fann_train_data *train, 
         break;
       }
     }
-    */
 
     if(desiredErrorReached == 0)
       break;
+    */
   }
 
   savegpuann(data, ann);

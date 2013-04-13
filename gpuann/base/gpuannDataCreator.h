@@ -14,6 +14,7 @@ void gpuann_loadInputs(gpuann& nn, fann_type *d_inputs, unsigned int instanceInd
 fann_type* gpuann_getOutputsDevicePointer(gpuann& nn, unsigned int instanceIndex = 0);
 
 void createDump(gpuann &nn, debugGpuann &dnn);
+void removeDump(debugGpuann &dnn);
 
 void creategpuannTrainData(gpuannTrainData &trainData, fann_train_data *train);
 void removegpuannTrainData(gpuannTrainData &trainData);

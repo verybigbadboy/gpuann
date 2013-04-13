@@ -25,6 +25,7 @@ struct gpuann
   unsigned int _weightsCountPerInstance;
   unsigned int _neuronsCountPerInstance;
   unsigned int _sarpropEpoch;
+  unsigned int _trainingAlgorithm;
 };
 
 struct debugGpuann: public gpuann
@@ -38,6 +39,19 @@ struct gpuannTrainData
   unsigned int _outputCount;
   fann_type * d_input;
   fann_type * d_output;
+};
+
+enum gpuann_fann_train_enum
+{
+  GPUANN_FANN_TRAIN_INCREMENTAL = 0,
+  GPUANN_FANN_TRAIN_BATCH_PARRALEL,
+  GPUANN_FANN_TRAIN_RPROP_PARRALEL,
+  GPUANN_FANN_TRAIN_QUICKPROP_PARRALEL,
+  GPUANN_FANN_TRAIN_SARPROP_PARRALEL,
+  GPUANN_FANN_TRAIN_BATCH,
+  GPUANN_FANN_TRAIN_RPROP,
+  GPUANN_FANN_TRAIN_QUICKPROP,
+  GPUANN_FANN_TRAIN_SARPROP
 };
 
 

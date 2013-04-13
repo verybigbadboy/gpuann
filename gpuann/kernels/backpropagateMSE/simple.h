@@ -12,12 +12,12 @@ template <unsigned int blockSize, unsigned int prevActivationFunction>
 __device__ inline void fann_backpropagate_MSE_gpu_kernel(unsigned int prevNeuronsCount, unsigned int neuronsCount, fann_type *weights, fann_type *trainErrors, fann_type *prevTrainErrors, fann_type *prevValue, fann_type *prevSum, fann_type prevSteepness
 , unsigned int totalNeuronsCount, unsigned int totalWeightsCount)
 {
-  unsigned int tid      = threadIdx.x;
-  unsigned int instance = blockIdx.y;
+  unsigned int tid                  = threadIdx.x;
+  unsigned int instance             = blockIdx.y;
   unsigned int weightPerNeuronCount = prevNeuronsCount;
-  unsigned int neuronIndex     = tid        + instance * totalNeuronsCount;
-  unsigned int prevLayerNeuron = blockIdx.x + instance * totalNeuronsCount;
-  unsigned int weightBeginIndex = tid * weightPerNeuronCount + instance * totalWeightsCount;
+  unsigned int neuronIndex          = tid        + instance * totalNeuronsCount;
+  unsigned int prevLayerNeuron      = blockIdx.x + instance * totalNeuronsCount;
+  unsigned int weightBeginIndex     = tid * weightPerNeuronCount + instance * totalWeightsCount;
 
   __shared__ fann_type sum[blockSize];
 

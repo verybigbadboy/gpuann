@@ -2,50 +2,6 @@
 #include <testing/train.h>
 #include <gpuann.h>
 
-
-void printannsum(struct fann *ann)
-{
-  struct fann_layer *last_layer = ann->last_layer;
-  for(struct fann_layer *layer_it = ann->first_layer; layer_it != last_layer; layer_it++)
-  {
-    struct fann_neuron * last_neuron = layer_it->last_neuron;
-    struct fann_neuron * neuron_it   = layer_it->first_neuron;
-    for(; neuron_it < last_neuron; ++neuron_it)
-    {
-      if(neuron_it->last_con == neuron_it->first_con)
-        printf("A");
-      printf("%f ", neuron_it->sum);
-    }
-    printf("\n");
-  }
-}
-
-void printannvalue(struct fann *ann)
-{
-  struct fann_layer *last_layer = ann->last_layer;
-  for(struct fann_layer *layer_it = ann->first_layer; layer_it != last_layer; layer_it++)
-  {
-    struct fann_neuron * last_neuron = layer_it->last_neuron;
-    struct fann_neuron * neuron_it   = layer_it->first_neuron;
-    for(; neuron_it < last_neuron; ++neuron_it)
-    {
-      if(neuron_it->last_con == neuron_it->first_con)
-        printf("A");
-      printf("%f ", neuron_it->value);
-    }
-    printf("\n");
-  }
-}
-
-void print2arrays(unsigned int size, fann_type *f, fann_type *s)
-{
-  printf("ololo\n");
-  for(unsigned int i = 0; i < size; ++i)
-  {
-    printf("%10.3f %10.3f\n", f[i], s[i]);
-  }
-}
-
 fann *createSpecificTrainedFann(unsigned int num_hiden_layers, unsigned int num_neurons_hidden_per_layer)
 {
   if(num_hiden_layers > 7)
@@ -109,49 +65,48 @@ fann *createSpecificTrainedFann(unsigned int num_hiden_layers, unsigned int num_
   fann_set_train_stop_function(ann, FANN_STOPFUNC_BIT);
   fann_set_bit_fail_limit(ann, 0.01f);
 
-  fann_set_training_algorithm(ann, FANN_TRAIN_RPROP);
+  fann_set_training_algorithm(ann, FANN_TRAIN_BATCH);
 
   fann_init_weights(ann, data);
 
-  //fann_train_on_data(ann, data, max_epochs, epochs_between_reports, desired_error);
+  testTrainMethods(ann, data);
 
-  for(int i = 0; i < 10; ++i)
-    testTrainMethods(ann, data);
+  fann_train_on_data(ann, data, max_epochs, epochs_between_reports, desired_error);
+
+  for(unsigned int i = 0; i < fann_length_train_data(data); i++)
+  {
+    fann_type *calc_out = fann_run(ann, data->input[i]);
+    fann_type difference = fann_abs(calc_out[0] - data->output[i][0]);
+    if(difference > 0.1)
+      printf("XOR test (%f,%f) -> %f, should be %f, difference=%f\n", data->input[i][0], data->input[i][1], calc_out[0], data->output[i][0], difference);
+  }
 
   fann_destroy_train(data);
 
   return ann;
 }
 
-bool runTest(struct fann *ann, fann_type * input, const char * testName, bool fullreport)
+bool runTest(struct fann *ann, fann_type * input)
 {
-  if(!fullreport)
-    printf("Test %s \n", testName);
-  fann_type *calc_out;
+  fann_type *calc_out_c;
+  fann_type *calc_out_g;
   fann_type calc_out_gpu, calc_out_cpu;
 
-  calc_out = gpuann_fann_run(ann, input);
-  calc_out_gpu = calc_out[0];
+  fann *gpunn = fann_copy(ann);
+  fann *cpunn = fann_copy(ann);
 
-  if(!fullreport)
-    printf("GPU xor test (%f,%f) -> %f\n", input[0], input[1], calc_out[0]);
+  calc_out_g = gpuann_fann_run(gpunn, input);
+  calc_out_c = fann_run(cpunn, input);
 
-  //printann(ann);
-
-  calc_out = fann_run(ann, input);
-  calc_out_cpu = calc_out[0];
-
-  if(!fullreport)
-    printf("CPU xor test (%f,%f) -> %f\n", input[0], input[1], calc_out[0]);
+  calc_out_gpu = calc_out_g[0];
+  calc_out_cpu = calc_out_c[0];
 
   bool success = (calc_out_cpu - calc_out_gpu) * (calc_out_cpu - calc_out_gpu) < 0.001;
 
-  if(!fullreport)
-    if(success)
-      printf("Passed\n");
-    else
-      printf("Failed!!!\n");
-    return success;
+  fann_destroy(cpunn);
+  fann_destroy(gpunn);
+
+  return success;
 }
 
 void runTests(struct fann *ann, bool fullreport)
@@ -161,21 +116,21 @@ void runTests(struct fann *ann, bool fullreport)
   fann_type input[2];
   input[0] = -1;
   input[1] = -1;
-  success &= runTest(ann, input, "00", fullreport);
+  success &= runTest(ann, input);
   input[0] = -1;
   input[1] = 1;
-  success &= runTest(ann, input, "01", fullreport);
+  success &= runTest(ann, input);
   input[0] = 1;
   input[1] = -1;
-  success &= runTest(ann, input, "10", fullreport);
+  success &= runTest(ann, input);
   input[0] = 1;
   input[1] = 1;
-  success &= runTest(ann, input, "11", fullreport);
+  success &= runTest(ann, input);
 
   if(success)
-    printf("runTests Passed\n");
+    printf("runTests PASSED\n");
   else
-    printf("runTests Failed!!!\n");
+    printf("runTests FAILED\n");
 }
 
 void fulltest()
@@ -186,7 +141,7 @@ void fulltest()
     {
       printf("Neural network type: %d %d\n", i, j);
       fann *ann = createSpecificTrainedFann(i, j);
-      runTests(ann);
+      runTests(ann , false);
       fann_destroy(ann);
     }
   }

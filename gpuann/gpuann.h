@@ -6,5 +6,6 @@
 fann_type * gpuann_fann_run(struct fann * ann, fann_type * input);
 void gpuann_fann_multirun(struct fann * ann, fann_type ** input, unsigned int instanceCount, fann_type ** output);
 void gpuann_fann_train(struct fann *ann, fann_type * input, fann_type * desired_output);
+void gpuann_fann_train_on_data(struct fann *ann, struct fann_train_data *train, unsigned int maxEpochs);
 
 #endif // GPUANN_H

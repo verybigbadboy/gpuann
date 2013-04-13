@@ -22,17 +22,15 @@ __global__ void gpuann_fann_update_weights_irpropm_gpu_kernel(unsigned int weigh
     fann_type slope = slopes[weightIndexInstanced];
     fann_type prevSlope = prevSlopes[weightIndexInstanced];
     fann_type nextStep;
-    
-    float sameSign = prevSlope * slope;
-    
-    if(sameSign >= 0.0)
+
+    if(prevSlope * slope >= 0.0)
       nextStep = fann_min(prevStep * increaseFactor, deltaMax);
     else
     {
       nextStep = fann_max(prevStep * decreaseFactor, deltaMin);
       slope = 0;
     }
-    
+
     if(slope < 0)
     {
       weights[weightIndexInstanced] -= nextStep;
@@ -45,7 +43,7 @@ __global__ void gpuann_fann_update_weights_irpropm_gpu_kernel(unsigned int weigh
       if(weights[weightIndexInstanced] > 1500)
         weights[weightIndexInstanced] = 1500;
     }
-    
+
     prevSteps[weightIndexInstanced] = nextStep;
     prevSlopes[weightIndexInstanced] = slope;
     slopes[weightIndexInstanced] = 0.0;

@@ -169,18 +169,25 @@ float gpuann_fann_train_epoch_incremental(gpuann &data, gpuannTrainData &trainDa
 
 float gpuann_fann_train_epoch(gpuann &data, gpuannTrainData &trainData)
 {
-  const fann * ann = data._fann;
-  switch (ann->training_algorithm)
+  switch (data._trainingAlgorithm)
   {
-    case FANN_TRAIN_QUICKPROP:
+    case GPUANN_FANN_TRAIN_QUICKPROP_PARRALEL:
       return gpuann_fann_train_epoch_quickprop(data, trainData);
-    case FANN_TRAIN_RPROP:
+    case GPUANN_FANN_TRAIN_RPROP_PARRALEL:
       return gpuann_fann_train_epoch_irpropm(data, trainData);
-    case FANN_TRAIN_SARPROP:
+    case GPUANN_FANN_TRAIN_SARPROP_PARRALEL:
       return gpuann_fann_train_epoch_sarprop(data, trainData);
-    case FANN_TRAIN_BATCH:
+    case GPUANN_FANN_TRAIN_BATCH_PARRALEL:
       return gpuann_fann_train_epoch_batch(data, trainData);
-    case FANN_TRAIN_INCREMENTAL:
+    case GPUANN_FANN_TRAIN_QUICKPROP:
+      return gpuann_fann_train_epoch_quickprop(data, trainData);
+    case GPUANN_FANN_TRAIN_RPROP:
+      return gpuann_fann_train_epoch_irpropm(data, trainData);
+    case GPUANN_FANN_TRAIN_SARPROP:
+      return gpuann_fann_train_epoch_sarprop(data, trainData);
+    case GPUANN_FANN_TRAIN_BATCH:
+      return gpuann_fann_train_epoch_batch(data, trainData);
+    case GPUANN_FANN_TRAIN_INCREMENTAL:
       return gpuann_fann_train_epoch_incremental(data, trainData);
   }
   return 0;
