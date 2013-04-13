@@ -5,7 +5,7 @@ bool isAlmostSame(fann_type& f1, fann_type& f2)
   if (f1 == f2)
     return true;
 
-  double minValue = 0.0001;
+  double minValue = 0.01;
 
   if(fabs(f1) < minValue && fabs(f2) < minValue || fabs(f1 - f2) < minValue)
     return true;
