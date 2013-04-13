@@ -90,7 +90,8 @@ void gpuann_fann_train(struct fann *ann, fann_type * input, fann_type * desired_
 
   fann_type *d_desired_output;
   cudaMalloc((void **)&(d_desired_output), ann->num_output * sizeof(fann_type));
-  cudaMemcpyAsync(d_desired_output, desired_output, ann->num_output * sizeof(fann_type), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_desired_output, desired_output, ann->num_output * sizeof(fann_type), cudaMemcpyHostToDevice);
+  cudaThreadSynchronize();
 
   gpuann_fann_run_implementation(gann);
   gpuann_fann_compute_MSE_implementation_gpu(gann, d_desired_output);

@@ -15,6 +15,9 @@
 #include <kernels/updateWeightsQuickprop/updateWeigthsQuickprop.h>
 #include <kernels/updateWeightsSarprop/updateWeightsSarprop.h>
 
+#include <cuda.h>
+#include <cuda_runtime.h>
+
 void gpuann_fann_reset_MSE(gpuann &data)
 {
   //do something TODO
@@ -95,6 +98,7 @@ void gpuann_create_multidata(gpuann &multidata, gpuann &data, gpuannTrainData &t
     copygpuann(multidata, data, 0, i);
     gpuann_loadInputs(multidata, trainData.d_input + trainData._inputCount * i, i);
   }
+  cudaThreadSynchronize();
 }
 
 void gpuann_fann_train_parralel_update_slopes(gpuann &data, gpuannTrainData &trainData)

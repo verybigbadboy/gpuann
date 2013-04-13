@@ -66,14 +66,14 @@ void copygpuann(gpuann& to, gpuann from, unsigned int fromInstance, unsigned int
   unsigned int neuronCount = ann->total_neurons;
   unsigned int weightsCount = ((ann->last_layer - 1)->last_neuron - 1)->last_con;
 
-  cudaMemcpyAsync(to.d_sumArray          + neuronCount  * toInstance, from.d_sumArray          + neuronCount  * fromInstance, neuronCount   * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
-  cudaMemcpyAsync(to.d_valuesArray       + neuronCount  * toInstance, from.d_valuesArray       + neuronCount  * fromInstance, neuronCount   * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
-  cudaMemcpyAsync(to.d_trainErrorsArray  + neuronCount  * toInstance, from.d_trainErrorsArray  + neuronCount  * fromInstance, neuronCount   * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
-  cudaMemcpyAsync(to.d_weightsArray      + weightsCount * toInstance, from.d_weightsArray      + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
-  cudaMemcpyAsync(to.d_prevWeightsDeltas + weightsCount * toInstance, from.d_prevWeightsDeltas + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
-  cudaMemcpyAsync(to.d_trainSlopes       + weightsCount * toInstance, from.d_trainSlopes       + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
-  cudaMemcpyAsync(to.d_prevTrainSlopes   + weightsCount * toInstance, from.d_prevTrainSlopes   + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
-  cudaMemcpyAsync(to.d_prevSteps         + weightsCount * toInstance, from.d_prevSteps         + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
+  cudaMemcpy(to.d_sumArray          + neuronCount  * toInstance, from.d_sumArray          + neuronCount  * fromInstance, neuronCount   * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
+  cudaMemcpy(to.d_valuesArray       + neuronCount  * toInstance, from.d_valuesArray       + neuronCount  * fromInstance, neuronCount   * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
+  cudaMemcpy(to.d_trainErrorsArray  + neuronCount  * toInstance, from.d_trainErrorsArray  + neuronCount  * fromInstance, neuronCount   * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
+  cudaMemcpy(to.d_weightsArray      + weightsCount * toInstance, from.d_weightsArray      + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
+  cudaMemcpy(to.d_prevWeightsDeltas + weightsCount * toInstance, from.d_prevWeightsDeltas + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
+  cudaMemcpy(to.d_trainSlopes       + weightsCount * toInstance, from.d_trainSlopes       + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
+  cudaMemcpy(to.d_prevTrainSlopes   + weightsCount * toInstance, from.d_prevTrainSlopes   + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
+  cudaMemcpy(to.d_prevSteps         + weightsCount * toInstance, from.d_prevSteps         + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
 }
 
 void loadgpuann(gpuann& nn, const fann *ann, unsigned int instanceIndex)
@@ -110,9 +110,9 @@ void loadgpuann(gpuann& nn, const fann *ann, unsigned int instanceIndex)
 
   unsigned int weightsCount = ((ann->last_layer - 1)->last_neuron - 1)->last_con;
 
-  cudaMemcpyAsync(nn.d_sumArray + neuronCount * instanceIndex,     nn.h_tmp_sumArray,    neuronCount  * sizeof(fann_type), cudaMemcpyHostToDevice);
-  cudaMemcpyAsync(nn.d_valuesArray + neuronCount * instanceIndex,  nn.h_tmp_valuesArray, neuronCount  * sizeof(fann_type), cudaMemcpyHostToDevice);
-  cudaMemcpyAsync(nn.d_weightsArray + weightsCount * instanceIndex, ann->weights,        weightsCount * sizeof(fann_type), cudaMemcpyHostToDevice);
+  cudaMemcpy(nn.d_sumArray + neuronCount * instanceIndex,     nn.h_tmp_sumArray,    neuronCount  * sizeof(fann_type), cudaMemcpyHostToDevice);
+  cudaMemcpy(nn.d_valuesArray + neuronCount * instanceIndex,  nn.h_tmp_valuesArray, neuronCount  * sizeof(fann_type), cudaMemcpyHostToDevice);
+  cudaMemcpy(nn.d_weightsArray + weightsCount * instanceIndex, ann->weights,        weightsCount * sizeof(fann_type), cudaMemcpyHostToDevice);
 
   if(ann->training_algorithm == FANN_TRAIN_RPROP)
   {
@@ -120,19 +120,22 @@ void loadgpuann(gpuann& nn, const fann *ann, unsigned int instanceIndex)
     for(unsigned int i = 0; i < weightsCount; ++i)
       array[i] = ann->rprop_delta_zero;
 
-    cudaMemcpyAsync(nn.d_prevSteps + weightsCount * instanceIndex, array, weightsCount * sizeof(fann_type), cudaMemcpyHostToDevice);
+    cudaMemcpy(nn.d_prevSteps + weightsCount * instanceIndex, array, weightsCount * sizeof(fann_type), cudaMemcpyHostToDevice);
     delete array;
   }
+
+  cudaThreadSynchronize();
 }
 
 void savegpuann(const gpuann& nn, fann *ann, unsigned int instanceIndex)
 {
   unsigned int neuronCount = ann->total_neurons;
   unsigned int weightsCount = ((ann->last_layer - 1)->last_neuron - 1)->last_con;
+  cudaThreadSynchronize();
 
-  cudaMemcpyAsync(nn.h_tmp_sumArray,     nn.d_sumArray + neuronCount * instanceIndex,      neuronCount  * sizeof(fann_type), cudaMemcpyDeviceToHost);
-  cudaMemcpyAsync(nn.h_tmp_valuesArray,  nn.d_valuesArray + neuronCount * instanceIndex,   neuronCount  * sizeof(fann_type), cudaMemcpyDeviceToHost);
-  cudaMemcpyAsync(ann->weights,          nn.d_weightsArray + weightsCount * instanceIndex, weightsCount * sizeof(fann_type), cudaMemcpyDeviceToHost);
+  cudaMemcpy(nn.h_tmp_sumArray,     nn.d_sumArray + neuronCount * instanceIndex,      neuronCount  * sizeof(fann_type), cudaMemcpyDeviceToHost);
+  cudaMemcpy(nn.h_tmp_valuesArray,  nn.d_valuesArray + neuronCount * instanceIndex,   neuronCount  * sizeof(fann_type), cudaMemcpyDeviceToHost);
+  cudaMemcpy(ann->weights,          nn.d_weightsArray + weightsCount * instanceIndex, weightsCount * sizeof(fann_type), cudaMemcpyDeviceToHost);
   cudaThreadSynchronize();
 
   struct fann_neuron *neuronsArray = ann->first_layer->first_neuron;
@@ -155,7 +158,7 @@ void savegpuann(const gpuann& nn, fann *ann, unsigned int instanceIndex)
 void gpuann_loadInputs(gpuann& nn, fann_type *d_inputs, unsigned int instanceIndex)
 {
   const fann *ann = nn._fann;
-  cudaMemcpyAsync(nn.d_valuesArray + nn._neuronsCountPerInstance * instanceIndex,  d_inputs, ann->num_input * sizeof(fann_type), cudaMemcpyDeviceToDevice);
+  cudaMemcpy(nn.d_valuesArray + nn._neuronsCountPerInstance * instanceIndex,  d_inputs, ann->num_input * sizeof(fann_type), cudaMemcpyDeviceToDevice);
 }
 
 fann_type* gpuann_getOutputsDevicePointer(gpuann& nn, unsigned int instanceIndex)
@@ -224,8 +227,8 @@ void creategpuannTrainData(gpuannTrainData &trainData, fann_train_data *train)
 
   for(unsigned int i = 0; i < dataCount; ++i)
   {
-    cudaMemcpyAsync(trainData.d_input  + i * inputCount,  train->input[i],  inputCount  * sizeof(fann_type), cudaMemcpyHostToDevice);
-    cudaMemcpyAsync(trainData.d_output + i * outputCount, train->output[i], outputCount * sizeof(fann_type), cudaMemcpyHostToDevice);
+    cudaMemcpy(trainData.d_input  + i * inputCount,  train->input[i],  inputCount  * sizeof(fann_type), cudaMemcpyHostToDevice);
+    cudaMemcpy(trainData.d_output + i * outputCount, train->output[i], outputCount * sizeof(fann_type), cudaMemcpyHostToDevice);
   }
 }
 
