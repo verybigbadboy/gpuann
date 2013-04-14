@@ -11,8 +11,8 @@ __global__ void gpuann_merge_slopes_gpu_kernel(unsigned int weightsCount, fann_t
   unsigned int tid         = threadIdx.x;
   unsigned int blockSize   = blockDim.x;
   unsigned int weightIndex = blockIdx.x * blockSize + tid;
-  
-  if(tid < weightsCount)
+
+  if(weightIndex < weightsCount)
     toSlopes[weightIndex] += fromSlopes[weightIndex];
 }
 

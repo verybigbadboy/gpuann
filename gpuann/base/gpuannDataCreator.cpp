@@ -57,8 +57,9 @@ void removegpuann(gpuann& nn)
   cudaFree(nn.d_prevSteps);
 }
 
-void copygpuann(gpuann& to, gpuann from, unsigned int fromInstance, unsigned int toInstance, unsigned int instanceCount)
+void copygpuann(gpuann& to, gpuann& from, unsigned int fromInstance, unsigned int toInstance, unsigned int instanceCount)
 {
+  cudaThreadSynchronize();
   if(to._fann != from._fann)
     throw "Neural networks should be created from one fann network";
 
@@ -75,10 +76,12 @@ void copygpuann(gpuann& to, gpuann from, unsigned int fromInstance, unsigned int
   cudaMemcpy(to.d_trainSlopes       + weightsCount * toInstance, from.d_trainSlopes       + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
   cudaMemcpy(to.d_prevTrainSlopes   + weightsCount * toInstance, from.d_prevTrainSlopes   + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
   cudaMemcpy(to.d_prevSteps         + weightsCount * toInstance, from.d_prevSteps         + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
+  cudaThreadSynchronize();
 }
 
 void loadgpuann(gpuann& nn, const fann *ann, unsigned int instanceIndex)
 {
+  cudaThreadSynchronize();
   unsigned int neuronCount = ann->total_neurons;
   struct fann_neuron *neuronsArray = ann->first_layer->first_neuron;
 
@@ -158,8 +161,10 @@ void savegpuann(const gpuann& nn, fann *ann, unsigned int instanceIndex)
 
 void gpuann_loadInputs(gpuann& nn, fann_type *d_inputs, unsigned int instanceIndex)
 {
+  cudaThreadSynchronize();
   const fann *ann = nn._fann;
   cudaMemcpy(nn.d_valuesArray + nn._neuronsCountPerInstance * instanceIndex,  d_inputs, ann->num_input * sizeof(fann_type), cudaMemcpyDeviceToDevice);
+  cudaThreadSynchronize();
 }
 
 fann_type* gpuann_getOutputsDevicePointer(gpuann& nn, unsigned int instanceIndex)
@@ -171,6 +176,7 @@ fann_type* gpuann_getOutputsDevicePointer(gpuann& nn, unsigned int instanceIndex
 
 void chekedCudaMemcpy(void *dst, const void *src, size_t count, enum cudaMemcpyKind kind)
 {
+  cudaThreadSynchronize();
   cudaMemcpy(dst, src, count, kind);
   cudaError_t error = cudaGetLastError();
   if(error != cudaSuccess)
@@ -182,6 +188,7 @@ void chekedCudaMemcpy(void *dst, const void *src, size_t count, enum cudaMemcpyK
     int *tmp = 0;
     *tmp = 0;
   }
+  cudaThreadSynchronize();
 };
 
 void createDump(gpuann &nn, debugGpuann &dnn)
@@ -228,6 +235,7 @@ void removeDump(debugGpuann &dnn)
 
 void creategpuannTrainData(gpuannTrainData &trainData, fann_train_data *train)
 {
+  cudaThreadSynchronize();
   unsigned int dataCount = train->num_data;
   unsigned int inputCount = train->num_input;
   unsigned int outputCount = train->num_output;
@@ -243,6 +251,7 @@ void creategpuannTrainData(gpuannTrainData &trainData, fann_train_data *train)
     cudaMemcpy(trainData.d_input  + i * inputCount,  train->input[i],  inputCount  * sizeof(fann_type), cudaMemcpyHostToDevice);
     cudaMemcpy(trainData.d_output + i * outputCount, train->output[i], outputCount * sizeof(fann_type), cudaMemcpyHostToDevice);
   }
+  cudaThreadSynchronize();
 }
 
 void removegpuannTrainData(gpuannTrainData &trainData)

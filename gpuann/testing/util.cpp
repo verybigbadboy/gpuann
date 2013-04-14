@@ -39,7 +39,7 @@ bool isAlmostSameArrays(fann_type *ar1, fann_type *ar2, unsigned int size, bool 
       {
         if(result)
           printf("\n%s\n", header.c_str());
-        printf("%6d %10.4f != %10.4f diff %10.4f\n", i, ar1[i], ar2[i], fabs(ar1[i] - ar2[i]));
+        printf("%6d %10.4f != %10.4f diff %10.4f %7.2f%\n", i, ar1[i], ar2[i], fabs(ar1[i] - ar2[i]), fabs(((ar1[i] - ar2[i])/ar2[i] * 100)) );
 
         if(failCountPrinted > maxFailCountPrinted)
         {

@@ -13,14 +13,15 @@ __global__ void runGpuKernel(unsigned int neuronInputCount, fann_type * inputArr
   __shared__ fann_type local[blockSize];
 
   unsigned int tid = threadIdx.x;
+  unsigned int instance = blockIdx.y;
 
   fann_type l_summ = 0;
 
   if(tid < neuronInputCount)
   {
-    l_summ = (fann_type) (inputArray[tid + totalNeuronsCount * blockIdx.y] * weightsArray[neuronInputCount * blockIdx.x + tid + totalWeightsCount * blockIdx.y]);
+    l_summ = (fann_type) (inputArray[tid + totalNeuronsCount * instance] * weightsArray[neuronInputCount * blockIdx.x + tid + totalWeightsCount * instance]);
     if((tid + blockSize) < neuronInputCount)
-      l_summ += (fann_type) (inputArray[tid + blockSize + totalNeuronsCount * blockIdx.y] * weightsArray[neuronInputCount * blockIdx.x + tid + blockSize + totalWeightsCount * blockIdx.y]);
+      l_summ += (fann_type) (inputArray[tid + blockSize + totalNeuronsCount * instance] * weightsArray[neuronInputCount * blockIdx.x + tid + blockSize + totalWeightsCount * instance]);
   }
 
   if(tid < blockSize)
@@ -114,9 +115,9 @@ __global__ void runGpuKernel(unsigned int neuronInputCount, fann_type * inputArr
         if(neuron_sum < -max_sum)
           neuron_sum = -max_sum;
 
-        sumArray[blockIdx.x + totalNeuronsCount * blockIdx.y] = neuron_sum;
+        sumArray[blockIdx.x + totalNeuronsCount * instance] = neuron_sum;
 
-      fann_activation_switch(layerActivationFunction, neuron_sum, outputArray[blockIdx.x + totalNeuronsCount * blockIdx.y]);
+      fann_activation_switch(layerActivationFunction, neuron_sum, outputArray[blockIdx.x + totalNeuronsCount * instance]);
     }
   }
 }

@@ -135,7 +135,7 @@ void runTests(struct fann *ann, bool fullreport)
 
 void fulltest()
 {
-  for(int i = 1; i < 7; ++i)
+  for(int i = 1; i < 3; ++i)
   {
     for(int j = 30; j < 512; j *=2)
     {

@@ -9,15 +9,24 @@
 //prevlayer block
 
 template <unsigned int blockSize, unsigned int prevActivationFunction>
-__device__ inline void fann_backpropagate_MSE_gpu_kernel(unsigned int prevNeuronsCount, unsigned int neuronsCount, fann_type *weights, fann_type *trainErrors, fann_type *prevTrainErrors, fann_type *prevValue, fann_type *prevSum, fann_type prevSteepness
-, unsigned int totalNeuronsCount, unsigned int totalWeightsCount)
+__device__ inline void fann_backpropagate_MSE_gpu_kernel(unsigned int prevNeuronsCount,
+                                                         unsigned int neuronsCount,
+                                                         fann_type *weights,
+                                                         fann_type *trainErrors,
+                                                         fann_type *prevTrainErrors,
+                                                         fann_type *prevValue,
+                                                         fann_type *prevSum,
+                                                         fann_type prevSteepness,
+                                                         unsigned int totalNeuronsCount,
+                                                         unsigned int totalWeightsCount)
 {
-  unsigned int tid                  = threadIdx.x;
-  unsigned int instance             = blockIdx.y;
-  unsigned int weightPerNeuronCount = prevNeuronsCount;
-  unsigned int neuronIndex          = tid        + instance * totalNeuronsCount;
-  unsigned int prevLayerNeuron      = blockIdx.x + instance * totalNeuronsCount;
-  unsigned int weightBeginIndex     = tid * weightPerNeuronCount + instance * totalWeightsCount;
+  unsigned int tid                      = threadIdx.x;
+  unsigned int instance                 = blockIdx.y;
+  unsigned int weightPerNeuronCount     = prevNeuronsCount;
+  unsigned int neuronIndex              = tid + instance * totalNeuronsCount;
+  unsigned int prevLayerNeuron          = blockIdx.x;
+  unsigned int prevLayerNeuronInstanced = prevLayerNeuron + instance * totalNeuronsCount;
+  unsigned int weightBeginIndex         = tid * weightPerNeuronCount + instance * totalWeightsCount;
 
   __shared__ fann_type sum[blockSize];
 
@@ -108,7 +117,7 @@ __device__ inline void fann_backpropagate_MSE_gpu_kernel(unsigned int prevNeuron
   }
 
   if(tid == 0)
-    prevTrainErrors[prevLayerNeuron] = mySum * gpuann_fann_activation_derived<prevActivationFunction>(prevSteepness, prevValue[prevLayerNeuron], prevSum[prevLayerNeuron]);
+    prevTrainErrors[prevLayerNeuronInstanced] = mySum * gpuann_fann_activation_derived<prevActivationFunction>(prevSteepness, prevValue[prevLayerNeuronInstanced], prevSum[prevLayerNeuronInstanced]);
 }
 
 #define fann_backpropagate_MSE_gpu_kernel_case(X)   case X: \

@@ -10,21 +10,16 @@
 __global__ void gpuann_fann_update_slopes_batch_gpu_kernel(unsigned int prevNeuronsCount, unsigned int neuronsCount, fann_type *trainErrors, fann_type *neuronSlopes, fann_type *prevValue
 , unsigned int totalNeuronsCount, unsigned int totalWeightsCount)
 {
-  unsigned int tid      = threadIdx.x;
-  unsigned int instance = blockIdx.y;
-  unsigned int neuronIndex     = blockIdx.x + instance * totalNeuronsCount;
+  unsigned int tid                  = threadIdx.x;
+  unsigned int instance             = blockIdx.y;
+  unsigned int neuronIndex          = blockIdx.x + instance * totalNeuronsCount;
   unsigned int prevLayerNeuronIndex = tid + instance * totalNeuronsCount;
-  unsigned int slopesIndex = tid + prevNeuronsCount * blockIdx.x + instance * totalWeightsCount;
+  unsigned int slopesIndex          = tid + prevNeuronsCount * blockIdx.x + instance * totalWeightsCount;
 
   fann_type error = trainErrors[neuronIndex];
   if(tid < prevNeuronsCount)
     neuronSlopes[slopesIndex] += error * prevValue[prevLayerNeuronIndex];
 }
-
-
-#define gpuann_fann_update_slopes_batch_gpu_kernel_blockSize_case(X)   case X: \
-gpuann_fann_update_slopes_batch_gpu_kernel<X> <<<dimGrid, dimBlock>>> (prevNeuronsCount, neuronsCount, trainErrors, neuronSlopes, prevValue, totalNeuronsCount); \
-break;
 
 void gpuann_fann_update_slopes_batch_implementation(gpuann &data, fann_layer *layerBegin, fann_layer *layerEnd)
 {

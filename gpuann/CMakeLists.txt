@@ -9,6 +9,7 @@ link_libraries(floatfann)
 CUDA_ADD_EXECUTABLE(memoryTest
 gpuann.cpp
 gpuannTrain.cpp
+gpuannParallelTrain.cpp
 base/gpuannDataCreator.cpp
 base/neuralNetworkTypeCheck.cpp
 test.cpp
