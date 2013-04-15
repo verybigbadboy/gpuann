@@ -96,6 +96,7 @@ void gpuann_fann_train(struct fann *ann, fann_type * input, fann_type * desired_
   gpuann_fann_compute_MSE_implementation_gpu(gann, d_desired_output);
   gpuann_fann_backpropagate_MSE_implementation_gpu(gann);
   gpuann_fann_update_weights_implementation(gann);
+  cudaFree(d_desired_output);
 
   savegpuann(gann, ann);
 
