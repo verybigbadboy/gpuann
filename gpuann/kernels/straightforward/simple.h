@@ -34,7 +34,7 @@ __global__ void runGpuKernel(unsigned int neuronInputCount, fann_type * inputArr
   // do reduction in shared mem
   if (blockSize >= 512)
   {
-    if (tid < 256 && tid < blockSize)
+    if (tid < 256)
     {
       local[tid] = l_summ = l_summ + local[tid + 256];
     }
@@ -44,7 +44,7 @@ __global__ void runGpuKernel(unsigned int neuronInputCount, fann_type * inputArr
 
   if (blockSize >= 256)
   {
-    if (tid < 128 && tid < blockSize)
+    if (tid < 128)
     {
       local[tid] = l_summ = l_summ + local[tid + 128];
     }
@@ -54,7 +54,7 @@ __global__ void runGpuKernel(unsigned int neuronInputCount, fann_type * inputArr
 
   if (blockSize >= 128)
   {
-    if (tid <  64 && tid < blockSize)
+    if (tid <  64)
     {
       local[tid] = l_summ = l_summ + local[tid + 64];
     }
@@ -105,6 +105,7 @@ __global__ void runGpuKernel(unsigned int neuronInputCount, fann_type * inputArr
     }
   }
 
+  //TODO: why  remove this line causes random value
   __syncthreads();
 
   if (tid == 0)
@@ -119,7 +120,7 @@ __global__ void runGpuKernel(unsigned int neuronInputCount, fann_type * inputArr
       if(neuron_sum < -max_sum)
         neuron_sum = -max_sum;
 
-      sumArray[blockIdx.x + totalNeuronsCount * instance] = neuron_sum;
+    sumArray[blockIdx.x + totalNeuronsCount * instance] = neuron_sum;
 
     fann_activation_switch(layerActivationFunction, neuron_sum, outputArray[blockIdx.x + totalNeuronsCount * instance]);
   }

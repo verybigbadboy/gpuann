@@ -30,17 +30,15 @@ __device__ inline void fann_backpropagate_MSE_gpu_kernel(unsigned int prevNeuron
 
   __shared__ fann_type sum[blockSize];
 
-  if(tid < blockSize)
-    sum[tid] = 0;
-  __syncthreads();
-
   fann_type mySum = 0;
 
   if(tid < neuronsCount)
   {
     mySum = trainErrors[neuronIndex] * weights[weightBeginIndex + prevLayerNeuron];
-    sum[tid] = mySum;
   }
+
+  if(tid < blockSize)
+    sum[tid] = mySum;
 
   __syncthreads();
 
@@ -116,10 +114,11 @@ __device__ inline void fann_backpropagate_MSE_gpu_kernel(unsigned int prevNeuron
     }
   }
 
+  //TODO: why  remove this line causes random value
   __syncthreads();
 
   if(tid == 0)
-    prevTrainErrors[prevLayerNeuronInstanced] = mySum * gpuann_fann_activation_derived<prevActivationFunction>(prevSteepness, prevValue[prevLayerNeuronInstanced], prevSum[prevLayerNeuronInstanced]);
+    prevTrainErrors[prevLayerNeuronInstanced] = sum[0] * gpuann_fann_activation_derived<prevActivationFunction>(prevSteepness, prevValue[prevLayerNeuronInstanced], prevSum[prevLayerNeuronInstanced]);
 }
 
 #define fann_backpropagate_MSE_gpu_kernel_case(X)   case X: \

@@ -35,18 +35,13 @@ void gpuann_load_multidata(gpuann &multidata, gpuann &data, gpuannTrainData &tra
     copygpuann(multidata, data, 0, i);//TODO copy only weights
     gpuann_loadInputs(multidata, trainData.d_input + trainData._inputCount * i, i);
   }
-  cudaThreadSynchronize();
 }
 
 void gpuann_fann_train_parralel_update_slopes(gpuann &multidata, gpuann &data, gpuannTrainData &trainData)
 {
-  cudaThreadSynchronize();
   gpuann_load_multidata(multidata, data, trainData);
-  cudaThreadSynchronize();
   gpuann_fann_train_parralel_multi_update_slopes(multidata, trainData);
-  cudaThreadSynchronize();
   gpuann_merge_slopes_implementation(multidata);
-  cudaThreadSynchronize();
   copygpuann(data, multidata); //TODO copy only slopes
 }
 

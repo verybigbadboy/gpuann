@@ -10,7 +10,7 @@ bool isAlmostSame(fann_type& f1, fann_type& f2)
   if(fabs(f1) < minValue && fabs(f2) < minValue || fabs(f1 - f2) < minValue)
     return true;
 
-  float relativeError, maxRelativeError = 0.1; //10 percent error max
+  float relativeError, maxRelativeError = 0.01; //10 percent error max
 
   if (fabs(f2) > fabs(f1))
     relativeError = fabs((f1 - f2) / f2);
