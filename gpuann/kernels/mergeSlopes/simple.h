@@ -24,7 +24,7 @@ void gpuann_merge_slopes_implementation(gpuann &data)
   
   unsigned int threadCount = 256;
   dim3 dimBlock(threadCount, 1, 1);
-  dim3 dimGrid(weightsCount / threadCount + 1, instanceCount, 1);
+  dim3 dimGrid(weightsCount / threadCount + 1, 1, 1);
   
   for(unsigned int instance = 1; instance < instanceCount; ++instance)
   {
