@@ -40,81 +40,83 @@ __device__ inline void fann_backpropagate_MSE_gpu_kernel(unsigned int prevNeuron
   {
     mySum = trainErrors[neuronIndex] * weights[weightBeginIndex + prevLayerNeuron];
     sum[tid] = mySum;
+  }
+
+  __syncthreads();
+
+  if (blockSize >= 512)
+  {
+    if (tid < 256)
+    {
+      sum[tid] = mySum = mySum + sum[tid + 256];
+    }
 
     __syncthreads();
+  }
 
-    if (blockSize >= 512)
+  if (blockSize >= 256)
+  {
+    if (tid < 128)
     {
-      if (tid < 256)
-      {
-        sum[tid] = mySum = mySum + sum[tid + 256];
-      }
-
-      __syncthreads();
+      sum[tid] = mySum = mySum + sum[tid + 128];
     }
 
-    if (blockSize >= 256)
-    {
-      if (tid < 128)
-      {
-        sum[tid] = mySum = mySum + sum[tid + 128];
-      }
+    __syncthreads();
+  }
 
-      __syncthreads();
+  if (blockSize >= 128)
+  {
+    if (tid <  64)
+    {
+      sum[tid] = mySum = mySum + sum[tid +  64];
     }
 
-    if (blockSize >= 128)
-    {
-      if (tid <  64)
-      {
-        sum[tid] = mySum = mySum + sum[tid +  64];
-      }
+    __syncthreads();
+  }
 
-      __syncthreads();
+  unsigned int localMemorySize = blockSize / 2;
+  if(localMemorySize > 32)
+    localMemorySize = 32;
+
+  if (tid < localMemorySize)
+  {
+    // now that we are using warp-synchronous programming (below)
+    // we need to declare our shared memory volatile so that the compiler
+    // doesn't reorder stores to it and induce incorrect behavior.
+    volatile fann_type *smem = sum;
+
+    if (blockSize >=  64)
+    {
+      smem[tid] = mySum = mySum + smem[tid + 32];
     }
 
-    unsigned int localMemorySize = blockSize / 2;
-    if(localMemorySize > 32)
-      localMemorySize = 32;
-
-    if (tid < localMemorySize)
+    if (blockSize >=  32)
     {
-      // now that we are using warp-synchronous programming (below)
-      // we need to declare our shared memory volatile so that the compiler
-      // doesn't reorder stores to it and induce incorrect behavior.
-      volatile fann_type *smem = sum;
+      smem[tid] = mySum = mySum + smem[tid + 16];
+    }
 
-      if (blockSize >=  64)
-      {
-        smem[tid] = mySum = mySum + smem[tid + 32];
-      }
+    if (blockSize >=  16)
+    {
+      smem[tid] = mySum = mySum + smem[tid +  8];
+    }
 
-      if (blockSize >=  32)
-      {
-        smem[tid] = mySum = mySum + smem[tid + 16];
-      }
+    if (blockSize >=   8)
+    {
+      smem[tid] = mySum = mySum + smem[tid +  4];
+    }
 
-      if (blockSize >=  16)
-      {
-        smem[tid] = mySum = mySum + smem[tid +  8];
-      }
+    if (blockSize >=   4)
+    {
+      smem[tid] = mySum = mySum + smem[tid +  2];
+    }
 
-      if (blockSize >=   8)
-      {
-        smem[tid] = mySum = mySum + smem[tid +  4];
-      }
-
-      if (blockSize >=   4)
-      {
-        smem[tid] = mySum = mySum + smem[tid +  2];
-      }
-
-      if (blockSize >=   2)
-      {
-        smem[tid] = mySum = mySum + smem[tid +  1];
-      }
+    if (blockSize >=   2)
+    {
+      smem[tid] = mySum = mySum + smem[tid +  1];
     }
   }
+
+  __syncthreads();
 
   if(tid == 0)
     prevTrainErrors[prevLayerNeuronInstanced] = mySum * gpuann_fann_activation_derived<prevActivationFunction>(prevSteepness, prevValue[prevLayerNeuronInstanced], prevSum[prevLayerNeuronInstanced]);

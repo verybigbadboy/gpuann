@@ -98,6 +98,7 @@ void testTrainMethods(fann *ann, fann_train_data* train)
   testOneEpochTrain(ann, train, FANN_TRAIN_RPROP,       "RProp Train");
   testOneEpochTrain(ann, train, FANN_TRAIN_SARPROP,     "SarProp Train");
 
+
   testOneEpochParallelTrain(ann, train, FANN_TRAIN_BATCH,       "Batch Train");
   testOneEpochParallelTrain(ann, train, FANN_TRAIN_QUICKPROP,   "QuickProp Train");
   testOneEpochParallelTrain(ann, train, FANN_TRAIN_RPROP,       "RProp Train");
