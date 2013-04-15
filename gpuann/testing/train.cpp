@@ -69,14 +69,9 @@ void testOneEpochParallelTrain(fann *ann, fann_train_data* train, unsigned int t
   gpunn->training_algorithm = (fann_train_enum)trainingAlgorithm;
   cpunn->training_algorithm = (fann_train_enum)trainingAlgorithm;
 
-  train->num_data = 2;
-
   gpuann_fann_parallel_train_on_data(gpunn, train, 1);
 
   fann_train_epoch(cpunn, train);
-
-  fann_type *cpuValuesArray = (fann_type *)malloc(cpunn->total_neurons * sizeof(fann_type));
-  fann_type *gpuValuesArray = (fann_type *)malloc(cpunn->total_neurons * sizeof(fann_type));  
 
   passed &= isAlmostSameArrays(gpunn->weights, cpunn->weights, cpunn->total_connections, true, "WEIGHTS:");
 
