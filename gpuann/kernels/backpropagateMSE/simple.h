@@ -32,13 +32,16 @@ __device__ inline void fann_backpropagate_MSE_gpu_kernel(unsigned int prevNeuron
 
   fann_type mySum = 0;
 
-  if(tid < neuronsCount)
+  if(tid < blockSize && tid < neuronsCount)
   {
     mySum = trainErrors[neuronIndex] * weights[weightBeginIndex + prevLayerNeuron];
+    if(tid + blockSize < neuronsCount)
+      mySum += trainErrors[neuronIndex + blockSize] * weights[weightBeginIndex + prevLayerNeuron + blockSize * weightPerNeuronCount];
   }
 
   if(tid < blockSize)
     sum[tid] = mySum;
+
 
   __syncthreads();
 
@@ -159,11 +162,13 @@ void fann_backpropagate_MSE_gpu_kernel_blockSize(unsigned int instanceCount, uns
 {
   unsigned int threadsCount = pow2roundup(neuronsCount);
 
-  if(threadsCount < 4)
-    threadsCount = 4;
+  if(threadsCount < 8)
+    threadsCount = 8;
   else
     if(threadsCount > 512)
       throw std::string("too many inputs");
+
+  threadsCount /= 2; //optimization
 
   dim3 dimBlock(threadsCount, 1, 1);
   dim3 dimGrid(prevNeuronsCount, instanceCount, 1);
