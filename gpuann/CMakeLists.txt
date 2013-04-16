@@ -18,6 +18,7 @@ testing/train.cpp
 testing/util.cpp
 kernels/backpropagateMSE/backpropagateMSErun.cu
 kernels/computeMSE/run.cu
+kernels/d2dMemcpy/d2dMemcpy.cu
 kernels/mergeSlopes/mergeSlopes.cu
 kernels/straightforward/straightforward.cpp
 kernels/straightforward/straightforward.cu

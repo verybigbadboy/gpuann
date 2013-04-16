@@ -5,14 +5,14 @@
 
 void creategpuann(gpuann& nn, const fann *ann, unsigned int instanceCount = 1);
 void removegpuann(gpuann& nn);
-void copygpuannAsync(gpuann& to, gpuann& from, unsigned int fromInstance = 0, unsigned int toInstance = 0, unsigned int instanceCount = 1);
-void copygpuannWeightsAsync(gpuann& to, gpuann& from, unsigned int fromInstance = 0, unsigned int toInstance = 0, unsigned int instanceCount = 1);
-void copygpuannSlopesAsync(gpuann& to, gpuann& from, unsigned int fromInstance = 0, unsigned int toInstance = 0, unsigned int instanceCount = 1);
+void copygpuann(gpuann& to, gpuann& from, unsigned int fromInstance = 0, unsigned int toInstance = 0, unsigned int instanceCount = 1);
+void copygpuannWeights(gpuann& to, gpuann& from, unsigned int fromInstance = 0, unsigned int toInstance = 0, unsigned int instanceCount = 1);
+void copygpuannSlopes(gpuann& to, gpuann& from, unsigned int fromInstance = 0, unsigned int toInstance = 0, unsigned int instanceCount = 1);
 
 void loadgpuann(gpuann& nn, const fann *ann, unsigned int instanceIndex = 0);
 void savegpuann(const gpuann& nn, fann *ann, unsigned int instanceIndex = 0);
 
-void gpuann_loadInputsAsync(gpuann& nn, fann_type *d_inputs, unsigned int instanceIndex = 0);
+void gpuann_loadInputs(gpuann& nn, fann_type *d_inputs, unsigned int instanceIndex = 0);
 fann_type* gpuann_getOutputsDevicePointer(gpuann& nn, unsigned int instanceIndex = 0);
 
 void createDump(gpuann &nn, debugGpuann &dnn);
