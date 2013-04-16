@@ -99,14 +99,14 @@ void copygpuann(gpuann& to, gpuann& from, unsigned int fromInstance, unsigned in
   unsigned int neuronCount = ann->total_neurons;
   unsigned int weightsCount = ((ann->last_layer - 1)->last_neuron - 1)->last_con;
 
-  gpuann_d2dMemcpy(to.d_sumArray          + neuronCount  * toInstance, from.d_sumArray          + neuronCount  * fromInstance, neuronCount   * sizeof(fann_type) * instanceCount);
-  gpuann_d2dMemcpy(to.d_valuesArray       + neuronCount  * toInstance, from.d_valuesArray       + neuronCount  * fromInstance, neuronCount   * sizeof(fann_type) * instanceCount);
-  gpuann_d2dMemcpy(to.d_trainErrorsArray  + neuronCount  * toInstance, from.d_trainErrorsArray  + neuronCount  * fromInstance, neuronCount   * sizeof(fann_type) * instanceCount);
-  gpuann_d2dMemcpy(to.d_weightsArray      + weightsCount * toInstance, from.d_weightsArray      + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount);
-  gpuann_d2dMemcpy(to.d_prevWeightsDeltas + weightsCount * toInstance, from.d_prevWeightsDeltas + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount);
-  gpuann_d2dMemcpy(to.d_trainSlopes       + weightsCount * toInstance, from.d_trainSlopes       + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount);
-  gpuann_d2dMemcpy(to.d_prevTrainSlopes   + weightsCount * toInstance, from.d_prevTrainSlopes   + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount);
-  gpuann_d2dMemcpy(to.d_prevSteps         + weightsCount * toInstance, from.d_prevSteps         + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount);
+  gpuann_d2dMemcpy(to.d_sumArray          + neuronCount  * toInstance, from.d_sumArray          + neuronCount  * fromInstance, neuronCount  * instanceCount);
+  gpuann_d2dMemcpy(to.d_valuesArray       + neuronCount  * toInstance, from.d_valuesArray       + neuronCount  * fromInstance, neuronCount  * instanceCount);
+  gpuann_d2dMemcpy(to.d_trainErrorsArray  + neuronCount  * toInstance, from.d_trainErrorsArray  + neuronCount  * fromInstance, neuronCount  * instanceCount);
+  gpuann_d2dMemcpy(to.d_weightsArray      + weightsCount * toInstance, from.d_weightsArray      + weightsCount * fromInstance, weightsCount * instanceCount);
+  gpuann_d2dMemcpy(to.d_prevWeightsDeltas + weightsCount * toInstance, from.d_prevWeightsDeltas + weightsCount * fromInstance, weightsCount * instanceCount);
+  gpuann_d2dMemcpy(to.d_trainSlopes       + weightsCount * toInstance, from.d_trainSlopes       + weightsCount * fromInstance, weightsCount * instanceCount);
+  gpuann_d2dMemcpy(to.d_prevTrainSlopes   + weightsCount * toInstance, from.d_prevTrainSlopes   + weightsCount * fromInstance, weightsCount * instanceCount);
+  gpuann_d2dMemcpy(to.d_prevSteps         + weightsCount * toInstance, from.d_prevSteps         + weightsCount * fromInstance, weightsCount * instanceCount);
 }
 
 void copygpuannWeights(gpuann& to, gpuann& from, unsigned int fromInstance, unsigned int toInstance, unsigned int instanceCount)
@@ -119,8 +119,8 @@ void copygpuannWeights(gpuann& to, gpuann& from, unsigned int fromInstance, unsi
   unsigned int neuronCount = ann->total_neurons;
   unsigned int weightsCount = ((ann->last_layer - 1)->last_neuron - 1)->last_con;
 
-  gpuann_d2dMemcpy(to.d_valuesArray       + neuronCount  * toInstance, from.d_valuesArray       + neuronCount  * fromInstance, neuronCount   * sizeof(fann_type) * instanceCount);
-  gpuann_d2dMemcpy(to.d_weightsArray      + weightsCount * toInstance, from.d_weightsArray      + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount);
+  gpuann_d2dMemcpy(to.d_valuesArray       + neuronCount  * toInstance, from.d_valuesArray       + neuronCount  * fromInstance, neuronCount  * instanceCount);
+  gpuann_d2dMemcpy(to.d_weightsArray      + weightsCount * toInstance, from.d_weightsArray      + weightsCount * fromInstance, weightsCount * instanceCount);
 }
 
 void copygpuannSlopes(gpuann& to, gpuann& from, unsigned int fromInstance, unsigned int toInstance, unsigned int instanceCount)
@@ -133,7 +133,7 @@ void copygpuannSlopes(gpuann& to, gpuann& from, unsigned int fromInstance, unsig
   unsigned int neuronCount = ann->total_neurons;
   unsigned int weightsCount = ((ann->last_layer - 1)->last_neuron - 1)->last_con;
 
-  gpuann_d2dMemcpy(to.d_trainSlopes       + weightsCount * toInstance, from.d_trainSlopes       + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount);
+  gpuann_d2dMemcpy(to.d_trainSlopes       + weightsCount * toInstance, from.d_trainSlopes       + weightsCount * fromInstance, weightsCount * instanceCount);
 }
 
 void loadgpuann(gpuann& nn, const fann *ann, unsigned int instanceIndex)
@@ -217,7 +217,7 @@ void savegpuann(const gpuann& nn, fann *ann, unsigned int instanceIndex)
 void gpuann_loadInputs(gpuann& nn, fann_type *d_inputs, unsigned int instanceIndex)
 {
   const fann *ann = nn._fann;
-  gpuann_d2dMemcpy(nn.d_valuesArray + nn._neuronsCountPerInstance * instanceIndex,  d_inputs, ann->num_input * sizeof(fann_type));
+  gpuann_d2dMemcpy(nn.d_valuesArray + nn._neuronsCountPerInstance * instanceIndex,  d_inputs, ann->num_input);
 }
 
 fann_type* gpuann_getOutputsDevicePointer(gpuann& nn, unsigned int instanceIndex)
