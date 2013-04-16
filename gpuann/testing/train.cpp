@@ -98,7 +98,7 @@ void testOneEpochParallelTrain(fann *ann, fann_train_data* train, unsigned int t
       fann_train_epoch(cpunn, train);
 
     clock_t ends = clock();
-    printf(" time: %10.5f", (double) (ends - start) / CLOCKS_PER_SEC );
+    printf(" time: %10.5f ", (double) (ends - start) / CLOCKS_PER_SEC * 1000. );
   }
 
 
