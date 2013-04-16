@@ -1,5 +1,6 @@
 #include <base/gpuannDataCreator.h>
 #include <base/neuralNetworkTypeCheck.h>
+#include <kernels/d2dMemcpy/d2dMemcpy.h>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -88,7 +89,7 @@ void removegpuann(gpuann& nn)
   cudaFree(nn.d_prevSteps);
 }
 
-void copygpuannAsync(gpuann& to, gpuann& from, unsigned int fromInstance, unsigned int toInstance, unsigned int instanceCount)
+void copygpuann(gpuann& to, gpuann& from, unsigned int fromInstance, unsigned int toInstance, unsigned int instanceCount)
 {
   if(to._fann != from._fann)
     throw "Neural networks should be created from one fann network";
@@ -98,17 +99,17 @@ void copygpuannAsync(gpuann& to, gpuann& from, unsigned int fromInstance, unsign
   unsigned int neuronCount = ann->total_neurons;
   unsigned int weightsCount = ((ann->last_layer - 1)->last_neuron - 1)->last_con;
 
-  chekedcudaMemcpyAsync(to.d_sumArray          + neuronCount  * toInstance, from.d_sumArray          + neuronCount  * fromInstance, neuronCount   * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
-  chekedcudaMemcpyAsync(to.d_valuesArray       + neuronCount  * toInstance, from.d_valuesArray       + neuronCount  * fromInstance, neuronCount   * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
-  chekedcudaMemcpyAsync(to.d_trainErrorsArray  + neuronCount  * toInstance, from.d_trainErrorsArray  + neuronCount  * fromInstance, neuronCount   * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
-  chekedcudaMemcpyAsync(to.d_weightsArray      + weightsCount * toInstance, from.d_weightsArray      + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
-  chekedcudaMemcpyAsync(to.d_prevWeightsDeltas + weightsCount * toInstance, from.d_prevWeightsDeltas + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
-  chekedcudaMemcpyAsync(to.d_trainSlopes       + weightsCount * toInstance, from.d_trainSlopes       + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
-  chekedcudaMemcpyAsync(to.d_prevTrainSlopes   + weightsCount * toInstance, from.d_prevTrainSlopes   + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
-  chekedcudaMemcpyAsync(to.d_prevSteps         + weightsCount * toInstance, from.d_prevSteps         + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
+  gpuann_d2dMemcpy(to.d_sumArray          + neuronCount  * toInstance, from.d_sumArray          + neuronCount  * fromInstance, neuronCount   * sizeof(fann_type) * instanceCount);
+  gpuann_d2dMemcpy(to.d_valuesArray       + neuronCount  * toInstance, from.d_valuesArray       + neuronCount  * fromInstance, neuronCount   * sizeof(fann_type) * instanceCount);
+  gpuann_d2dMemcpy(to.d_trainErrorsArray  + neuronCount  * toInstance, from.d_trainErrorsArray  + neuronCount  * fromInstance, neuronCount   * sizeof(fann_type) * instanceCount);
+  gpuann_d2dMemcpy(to.d_weightsArray      + weightsCount * toInstance, from.d_weightsArray      + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount);
+  gpuann_d2dMemcpy(to.d_prevWeightsDeltas + weightsCount * toInstance, from.d_prevWeightsDeltas + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount);
+  gpuann_d2dMemcpy(to.d_trainSlopes       + weightsCount * toInstance, from.d_trainSlopes       + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount);
+  gpuann_d2dMemcpy(to.d_prevTrainSlopes   + weightsCount * toInstance, from.d_prevTrainSlopes   + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount);
+  gpuann_d2dMemcpy(to.d_prevSteps         + weightsCount * toInstance, from.d_prevSteps         + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount);
 }
 
-void copygpuannWeightsAsync(gpuann& to, gpuann& from, unsigned int fromInstance, unsigned int toInstance, unsigned int instanceCount)
+void copygpuannWeights(gpuann& to, gpuann& from, unsigned int fromInstance, unsigned int toInstance, unsigned int instanceCount)
 {
   if(to._fann != from._fann)
     throw "Neural networks should be created from one fann network";
@@ -118,11 +119,11 @@ void copygpuannWeightsAsync(gpuann& to, gpuann& from, unsigned int fromInstance,
   unsigned int neuronCount = ann->total_neurons;
   unsigned int weightsCount = ((ann->last_layer - 1)->last_neuron - 1)->last_con;
 
-  chekedcudaMemcpyAsync(to.d_valuesArray       + neuronCount  * toInstance, from.d_valuesArray       + neuronCount  * fromInstance, neuronCount   * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
-  chekedcudaMemcpyAsync(to.d_weightsArray      + weightsCount * toInstance, from.d_weightsArray      + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
+  gpuann_d2dMemcpy(to.d_valuesArray       + neuronCount  * toInstance, from.d_valuesArray       + neuronCount  * fromInstance, neuronCount   * sizeof(fann_type) * instanceCount);
+  gpuann_d2dMemcpy(to.d_weightsArray      + weightsCount * toInstance, from.d_weightsArray      + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount);
 }
 
-void copygpuannSlopesAsync(gpuann& to, gpuann& from, unsigned int fromInstance, unsigned int toInstance, unsigned int instanceCount)
+void copygpuannSlopes(gpuann& to, gpuann& from, unsigned int fromInstance, unsigned int toInstance, unsigned int instanceCount)
 {
   if(to._fann != from._fann)
     throw "Neural networks should be created from one fann network";
@@ -132,7 +133,7 @@ void copygpuannSlopesAsync(gpuann& to, gpuann& from, unsigned int fromInstance, 
   unsigned int neuronCount = ann->total_neurons;
   unsigned int weightsCount = ((ann->last_layer - 1)->last_neuron - 1)->last_con;
 
-  chekedcudaMemcpyAsync(to.d_trainSlopes       + weightsCount * toInstance, from.d_trainSlopes       + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount, cudaMemcpyDeviceToDevice);
+  gpuann_d2dMemcpy(to.d_trainSlopes       + weightsCount * toInstance, from.d_trainSlopes       + weightsCount * fromInstance, weightsCount  * sizeof(fann_type) * instanceCount);
 }
 
 void loadgpuann(gpuann& nn, const fann *ann, unsigned int instanceIndex)
@@ -213,10 +214,10 @@ void savegpuann(const gpuann& nn, fann *ann, unsigned int instanceIndex)
   }
 }
 
-void gpuann_loadInputsAsync(gpuann& nn, fann_type *d_inputs, unsigned int instanceIndex)
+void gpuann_loadInputs(gpuann& nn, fann_type *d_inputs, unsigned int instanceIndex)
 {
   const fann *ann = nn._fann;
-  cudaMemcpyAsync(nn.d_valuesArray + nn._neuronsCountPerInstance * instanceIndex,  d_inputs, ann->num_input * sizeof(fann_type), cudaMemcpyDeviceToDevice);
+  gpuann_d2dMemcpy(nn.d_valuesArray + nn._neuronsCountPerInstance * instanceIndex,  d_inputs, ann->num_input * sizeof(fann_type));
 }
 
 fann_type* gpuann_getOutputsDevicePointer(gpuann& nn, unsigned int instanceIndex)
