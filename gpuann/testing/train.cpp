@@ -59,6 +59,9 @@ void testOneEpochTrain(fann *ann, fann_train_data* train, unsigned int trainingA
     printf("FAILED\n");
 }
 
+#include <cuda_runtime_api.h>
+#include <ctime>
+
 void testOneEpochParallelTrain(fann *ann, fann_train_data* train, unsigned int trainingAlgorithm, const std::string &header)
 {
   printf("TEST: One Epoch Parallel %20s ", header.c_str());
@@ -69,11 +72,37 @@ void testOneEpochParallelTrain(fann *ann, fann_train_data* train, unsigned int t
   gpunn->training_algorithm = (fann_train_enum)trainingAlgorithm;
   cpunn->training_algorithm = (fann_train_enum)trainingAlgorithm;
 
-  gpuann_fann_parallel_train_on_data(gpunn, train, 1);
+  {
+    cudaEvent_t start, stop;
+    float time;
 
-  fann_train_epoch(cpunn, train);
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord( start, 0 );
 
-  passed &= isAlmostSameArrays(gpunn->weights, cpunn->weights, cpunn->total_connections, true, "WEIGHTS:");
+    gpuann_fann_parallel_train_on_data(gpunn, train, 1000);
+
+    cudaEventRecord( stop, 0 );
+    cudaEventSynchronize( stop );
+    cudaEventElapsedTime( &time, start, stop );
+    cudaEventDestroy( start );
+    cudaEventDestroy( stop );
+
+    printf(" time: %10.5f", time);
+  }
+
+  {
+    clock_t start = clock();
+
+    for(int i = 0; i < 1000; ++i)
+      fann_train_epoch(cpunn, train);
+
+    clock_t ends = clock();
+    printf(" time: %10.5f", (double) (ends - start) / CLOCKS_PER_SEC );
+  }
+
+
+  //passed &= isAlmostSameArrays(gpunn->weights, cpunn->weights, cpunn->total_connections, true, "WEIGHTS:");
 
   fann_destroy(gpunn);
   fann_destroy(cpunn);
@@ -87,11 +116,13 @@ void testOneEpochParallelTrain(fann *ann, fann_train_data* train, unsigned int t
 
 void testTrainMethods(fann *ann, fann_train_data* train)
 {
+  /*
   testOneEpochTrain(ann, train, FANN_TRAIN_INCREMENTAL, "Incremental Train");
   testOneEpochTrain(ann, train, FANN_TRAIN_BATCH,       "Batch Train");
   testOneEpochTrain(ann, train, FANN_TRAIN_QUICKPROP,   "QuickProp Train");
   testOneEpochTrain(ann, train, FANN_TRAIN_RPROP,       "RProp Train");
   testOneEpochTrain(ann, train, FANN_TRAIN_SARPROP,     "SarProp Train");
+  */
 
 
   testOneEpochParallelTrain(ann, train, FANN_TRAIN_BATCH,       "Batch Train");

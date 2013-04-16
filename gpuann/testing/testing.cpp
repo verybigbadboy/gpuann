@@ -71,8 +71,8 @@ fann *createSpecificTrainedFann(unsigned int num_hiden_layers, unsigned int num_
 
   testTrainMethods(ann, data);
 
-  fann_train_on_data(ann, data, max_epochs, epochs_between_reports, desired_error);
-
+  //fann_train_on_data(ann, data, max_epochs, epochs_between_reports, desired_error);
+/*
   for(unsigned int i = 0; i < fann_length_train_data(data); i++)
   {
     fann_type *calc_out = fann_run(ann, data->input[i]);
@@ -80,7 +80,7 @@ fann *createSpecificTrainedFann(unsigned int num_hiden_layers, unsigned int num_
     if(difference > 0.1)
       printf("XOR test (%f,%f) -> %f, should be %f, difference=%f\n", data->input[i][0], data->input[i][1], calc_out[0], data->output[i][0], difference);
   }
-
+*/
   fann_destroy_train(data);
 
   return ann;
@@ -135,7 +135,8 @@ void runTests(struct fann *ann, bool fullreport)
 
 void fulltest()
 {
-  for(int i = 1; i < 7; ++i)
+  
+  for(int i = 1; i < 4; ++i)
   {
     for(int j = 30; j < 512; j *=2)
     {
@@ -145,4 +146,11 @@ void fulltest()
       fann_destroy(ann);
     }
   }
+
+/*
+  int i = 4, j = 240;
+  printf("Neural network type: %d %d\n", i, j);
+  fann *ann = createSpecificTrainedFann(i, j);
+  runTests(ann , false);
+  fann_destroy(ann);*/
 }
