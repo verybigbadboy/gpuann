@@ -32,7 +32,7 @@ void gpuann_load_multidata(gpuann &multidata, gpuann &data, gpuannTrainData &tra
 
   for(unsigned int i = 0; i < instanceCount; i++)
   {
-    copygpuannWeights(multidata, data, 0, i);//TODO copy only weights and bias values
+    copygpuannWeights(multidata, data, 0, i);
     gpuann_loadInputs(multidata, trainData.d_input + trainData._inputCount * i, i);
   }
 }
@@ -42,7 +42,7 @@ void gpuann_fann_train_parralel_update_slopes(gpuann &multidata, gpuann &data, g
   gpuann_load_multidata(multidata, data, trainData);
   gpuann_fann_train_parralel_multi_update_slopes(multidata, trainData);
   gpuann_merge_slopes_implementation(multidata);
-  copygpuannSlopes(data, multidata); //TODO copy only slopes
+  copygpuannSlopes(data, multidata);
 }
 
 void update_weights(gpuann &data, gpuannTrainData &trainData)
@@ -92,6 +92,9 @@ void gpuann_fann_parallel_train_on_data(gpuann &data, gpuannTrainData &trainData
 
   gpuann multidata;
   creategpuann(multidata, ann, instanceCount);
+
+  for(unsigned int i = 0; i < instanceCount; i++)
+    copygpuannValues(multidata, data, 0, i);
 
   for(unsigned int i = 0; i < maxEpochs; ++i)
   {

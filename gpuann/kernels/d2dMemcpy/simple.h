@@ -9,7 +9,7 @@
 template <unsigned int blockSize>
 __global__ void gpuann_d2dMemcpy_gpu_kernel(fann_type *d_dst, fann_type *d_src, unsigned int size)
 {
-  unsigned int tid         = threadIdx.x;
+  unsigned int tid   = threadIdx.x;
   unsigned int index = blockIdx.x * blockSize + tid;
 
   if(index < size)
