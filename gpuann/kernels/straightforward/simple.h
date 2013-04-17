@@ -139,7 +139,7 @@ __global__ void gpuann_fann_run_multineuron_gpu_kernel(unsigned int neuronInputC
                                                        unsigned int totalNeuronsCount,
                                                        unsigned int totalWeightsCount)
 {
-  const unsigned int threadCount = 32;
+  const unsigned int threadCount = 256;
   //unsigned int threadCount          = blockDim.x;
 
   unsigned int tid                  = threadIdx.x;
@@ -261,8 +261,8 @@ void runGpu(unsigned int neuronInputCount, fann_type * inputArray, fann_type * w
   {
     neuronCount--; //bias
     unsigned int threadNeeded = pow2roundup(neuronInputCount * neuronCount);
-    if(threadNeeded > 32)
-      threadNeeded = 32;
+    if(threadNeeded > 256)
+      threadNeeded = 256;
     unsigned int neuronsPerBlock = threadNeeded / neuronInputCount;
     unsigned int blocksNeeded = neuronCount / neuronsPerBlock + 1;
     dim3 dimBlock(threadNeeded, 1, 1);
