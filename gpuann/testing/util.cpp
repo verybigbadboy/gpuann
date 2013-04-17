@@ -1,6 +1,6 @@
 #include <testing/util.h>
 
-bool isAlmostSame(fann_type& f1, fann_type& f2)
+bool isAlmostSame(const fann_type& f1, const fann_type& f2)
 {
   if (f1 == f2)
     return true;
@@ -35,19 +35,21 @@ bool isAlmostSameArrays(fann_type *ar1, fann_type *ar2, unsigned int size, bool 
   {
     if(!isAlmostSame(ar1[i], ar2[i]))
     {
-      if(printErrors)
-      {
-        if(result)
-          printf("\n%s\n", header.c_str());
-        printf("%6d %10.4f != %10.4f diff %10.4f %7.2f%\n", i, ar1[i], ar2[i], fabs(ar1[i] - ar2[i]), fabs(((ar1[i] - ar2[i])/ar2[i] * 100)) );
-
-        if(failCountPrinted > maxFailCountPrinted)
+      fann_type v024 = 0.24;
+      if(!isAlmostSame(fabs(ar1[i] - ar2[i]), v024))
+        if(printErrors)
         {
-          int * tmp = 0;
-          *tmp = 0;
+          if(result)
+            printf("\n%s\n", header.c_str());
+          printf("%6d %10.4f != %10.4f diff %10.4f %7.2f%\n", i, ar1[i], ar2[i], fabs(ar1[i] - ar2[i]), fabs(((ar1[i] - ar2[i])/ar2[i] * 100)) );
+
+          if(failCountPrinted > maxFailCountPrinted)
+          {
+            int * tmp = 0;
+            *tmp = 0;
+          }
+          failCountPrinted++;
         }
-        failCountPrinted++;
-      }
       result = false;
     }
   }
