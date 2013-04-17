@@ -45,6 +45,8 @@ int main()
   cudaDeviceInit();
 
   fulltest();
+  
+  cudaDeviceReset();
 
   return 0;
 }

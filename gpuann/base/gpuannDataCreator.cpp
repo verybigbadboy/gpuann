@@ -109,7 +109,7 @@ void copygpuann(gpuann& to, gpuann& from, unsigned int fromInstance, unsigned in
   gpuann_d2dMemcpy(to.d_prevSteps         + weightsCount * toInstance, from.d_prevSteps         + weightsCount * fromInstance, weightsCount * instanceCount);
 }
 
-void copygpuannWeights(gpuann& to, gpuann& from, unsigned int fromInstance, unsigned int toInstance, unsigned int instanceCount)
+void copygpuannValues(gpuann& to, gpuann& from, unsigned int fromInstance, unsigned int toInstance, unsigned int instanceCount)
 {
   if(to._fann != from._fann)
     throw "Neural networks should be created from one fann network";
@@ -120,6 +120,18 @@ void copygpuannWeights(gpuann& to, gpuann& from, unsigned int fromInstance, unsi
   unsigned int weightsCount = ((ann->last_layer - 1)->last_neuron - 1)->last_con;
 
   gpuann_d2dMemcpy(to.d_valuesArray       + neuronCount  * toInstance, from.d_valuesArray       + neuronCount  * fromInstance, neuronCount  * instanceCount);
+}
+
+void copygpuannWeights(gpuann& to, gpuann& from, unsigned int fromInstance, unsigned int toInstance, unsigned int instanceCount)
+{
+  if(to._fann != from._fann)
+    throw "Neural networks should be created from one fann network";
+
+  const fann *ann = from._fann;
+
+  unsigned int neuronCount = ann->total_neurons;
+  unsigned int weightsCount = ((ann->last_layer - 1)->last_neuron - 1)->last_con;
+
   gpuann_d2dMemcpy(to.d_weightsArray      + weightsCount * toInstance, from.d_weightsArray      + weightsCount * fromInstance, weightsCount * instanceCount);
 }
 
