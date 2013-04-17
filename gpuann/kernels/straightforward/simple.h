@@ -126,8 +126,102 @@ __global__ void runGpuKernel(unsigned int neuronInputCount, fann_type * inputArr
   }
 }
 
+//for neurons with < 32 inputs
+//always 32 threads, one input = one thread
+template <unsigned int layerActivationFunction>
+__global__ void gpuann_fann_run_multineuron_gpu_kernel(unsigned int neuronInputCount,
+                                                       unsigned int neuronCount,
+                                                       fann_type * inputArray,
+                                                       fann_type * weightsArray,
+                                                       fann_type * sumArray,
+                                                       fann_type * outputArray,
+                                                       fann_type layerSteepness,
+                                                       unsigned int totalNeuronsCount,
+                                                       unsigned int totalWeightsCount)
+{
+  const unsigned int threadCount = 32;
+  //unsigned int threadCount          = blockDim.x;
+
+  unsigned int tid                  = threadIdx.x;
+  unsigned int instance             = blockIdx.y;
+  unsigned int inputIndex           = tid % neuronInputCount;
+  unsigned int inputIndexInstanced  = inputIndex + totalNeuronsCount * instance;
+  unsigned int neuronIndexInKernel  = tid / neuronInputCount;
+  unsigned int neuronsPerKernel     = threadCount / neuronInputCount;
+  unsigned int neuronIndex          = blockIdx.x * neuronsPerKernel + neuronIndexInKernel;
+  unsigned int weightIndex          = neuronInputCount * neuronIndex + inputIndex;
+  unsigned int neuronIndexInstanced = neuronIndex + totalNeuronsCount * instance;
+  unsigned int weightIndexInstanced = weightIndex + totalWeightsCount * instance;
+  
+
+  __shared__ fann_type local[threadCount];
+
+  fann_type l_summ = 0;
+
+  if(tid < neuronsPerKernel * neuronInputCount && neuronIndex < neuronCount)
+  {
+    l_summ = (fann_type) (inputArray[inputIndexInstanced] * weightsArray[weightIndexInstanced]);
+    local[tid] = l_summ;
+  }
+
+  __syncthreads();
+
+  if (tid < neuronsPerKernel * neuronInputCount && neuronIndex < neuronCount)
+  {
+    volatile fann_type *smem = local;
+
+    if(neuronInputCount > 16)
+      if(inputIndex < 16)
+        if(inputIndex + 16 < neuronInputCount)
+          smem[tid] = l_summ = l_summ + smem[tid + 16];
+
+    if(neuronInputCount > 8)
+      if(inputIndex < 8)
+        if(inputIndex + 8 < neuronInputCount)
+          smem[tid] = l_summ = l_summ + smem[tid + 8];
+
+    if(neuronInputCount > 4)
+      if(inputIndex < 4)
+        if(inputIndex + 4 < neuronInputCount)
+          smem[tid] = l_summ = l_summ + smem[tid + 4];
+
+    if(neuronInputCount > 2)
+      if(inputIndex < 2)
+        if(inputIndex + 2 < neuronInputCount)
+          smem[tid] = l_summ = l_summ + smem[tid + 2];
+
+    if(neuronInputCount > 1)
+      if(inputIndex < 1)
+        if(inputIndex + 1 < neuronInputCount)
+          smem[tid] = l_summ = l_summ + smem[tid + 1];
+  }
+
+  //TODO: why  remove this line causes random value
+  __syncthreads();
+
+  if (inputIndex == 0 && neuronIndex < neuronCount && neuronIndexInKernel < neuronsPerKernel)
+  {
+    fann_type neuron_sum = local[tid];
+    neuron_sum *= layerSteepness;
+
+    fann_type max_sum = 150 / layerSteepness;
+    if(neuron_sum > max_sum)
+      neuron_sum = max_sum;
+    else
+      if(neuron_sum < -max_sum)
+        neuron_sum = -max_sum;
+
+    sumArray[neuronIndexInstanced] = neuron_sum;
+    fann_activation_switch(layerActivationFunction, neuron_sum, outputArray[neuronIndexInstanced]);
+  }
+}
+
 #define runGpuActivatedCase(X) case X: \
 runGpuKernel <blockSize, X> <<<dimGrid, dimBlock>>>(neuronInputCount, inputArray, weightsArray, sumArray, outputArray, layerSteepness, totalNeuronsCount, totalWeightsCount); \
+break;
+
+#define gpuann_fann_run_multineuron_gpu_kernelCase(X) case X: \
+gpuann_fann_run_multineuron_gpu_kernel <X> <<<dimGrid, dimBlock>>>(neuronInputCount, neuronCount, inputArray, weightsArray, sumArray, outputArray, layerSteepness, totalNeuronsCount, totalWeightsCount); \
 break;
 
 template <unsigned int blockSize>
@@ -163,13 +257,46 @@ break;
 
 void runGpu(unsigned int neuronInputCount, fann_type * inputArray, fann_type * weightsArray, fann_type *sumArray, fann_type * outputArray, fann_type layerSteepness, unsigned int layerActivationFunction, unsigned int neuronCount, unsigned int instanceCount, unsigned int totalNeuronsCount, unsigned int totalWeightsCount)
 {
-  unsigned int threadsCount = pow2roundup(neuronInputCount) / 2;
-  if(threadsCount < 4)
-    threadsCount = 4;
+  if(neuronInputCount < 32)
+  {
+    neuronCount--; //bias
+    unsigned int threadNeeded = pow2roundup(neuronInputCount * neuronCount);
+    if(threadNeeded > 32)
+      threadNeeded = 32;
+    unsigned int neuronsPerBlock = threadNeeded / neuronInputCount;
+    unsigned int blocksNeeded = neuronCount / neuronsPerBlock + 1;
+    dim3 dimBlock(threadNeeded, 1, 1);
+    dim3 dimGrid(blocksNeeded, instanceCount, 1); // TODO create bias if
+
+    switch(layerActivationFunction)
+    {
+      gpuann_fann_run_multineuron_gpu_kernelCase(0);
+      gpuann_fann_run_multineuron_gpu_kernelCase(1);
+      gpuann_fann_run_multineuron_gpu_kernelCase(2);
+      gpuann_fann_run_multineuron_gpu_kernelCase(3);
+      gpuann_fann_run_multineuron_gpu_kernelCase(4);
+      gpuann_fann_run_multineuron_gpu_kernelCase(5);
+      gpuann_fann_run_multineuron_gpu_kernelCase(6);
+      gpuann_fann_run_multineuron_gpu_kernelCase(7);
+      gpuann_fann_run_multineuron_gpu_kernelCase(8);
+      gpuann_fann_run_multineuron_gpu_kernelCase(9);
+      gpuann_fann_run_multineuron_gpu_kernelCase(10);
+      gpuann_fann_run_multineuron_gpu_kernelCase(11);
+      gpuann_fann_run_multineuron_gpu_kernelCase(12);
+      gpuann_fann_run_multineuron_gpu_kernelCase(13);
+      gpuann_fann_run_multineuron_gpu_kernelCase(14);
+      gpuann_fann_run_multineuron_gpu_kernelCase(15);
+    }
+  }
   else
-    if(threadsCount > 256)
-      throw std::string("too many inputs");
-    
+  {
+    unsigned int threadsCount = pow2roundup(neuronInputCount) / 2;
+    if(threadsCount < 4)
+      threadsCount = 4;
+    else
+      if(threadsCount > 256)
+        throw std::string("too many inputs");
+
     switch (threadsCount)
     {
       runGpuThreadsCase(4);
@@ -180,6 +307,7 @@ void runGpu(unsigned int neuronInputCount, fann_type * inputArray, fann_type * w
       runGpuThreadsCase(128);
       runGpuThreadsCase(256);
     }
+  }
 }
 
 void gpuann_fann_run_implementation(gpuann &data)
