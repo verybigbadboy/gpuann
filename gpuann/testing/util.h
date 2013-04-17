@@ -4,7 +4,7 @@
 #include <fann.h>
 #include <string>
 
-bool isAlmostSame(fann_type& f1, fann_type& f2);
+bool isAlmostSame(const fann_type& f1, const fann_type& f2);
 bool isAlmostSameArrays(fann_type *ar1, fann_type *ar2, unsigned int size, bool printErrors, const std::string& header);
 
 void printannsum(struct fann *ann);
