@@ -7,13 +7,24 @@
 
 
 template <unsigned int blockSize>
-__global__ void gpuann_merge_slopes_gpu_kernel(unsigned int weightsCount, fann_type *toSlopes, fann_type *fromSlopes)
+__global__ void gpuann_merge_slopes_gpu_kernel(unsigned int weightsCount, fann_type *slopesBegin, unsigned int instanceCount)
 {
   unsigned int tid         = threadIdx.x;
-  unsigned int weightIndex = blockIdx.x * blockSize + tid;
+  //from last
+  unsigned int weightIndex = blockIdx.x * blockSize + tid + weightsCount * (instanceCount - 1);
 
-  if(weightIndex < weightsCount)
-    toSlopes[weightIndex] += fromSlopes[weightIndex];
+  fann_type sum = 0;
+
+  if(blockIdx.x * blockSize + tid < weightsCount)
+  {
+    while(weightIndex >= weightsCount)
+    {
+      sum += slopesBegin[weightIndex];
+      weightIndex -= weightsCount;
+    }
+
+    slopesBegin[weightIndex] += sum;
+  }
 }
 
 void gpuann_merge_slopes_implementation(gpuann &data)
@@ -25,9 +36,6 @@ void gpuann_merge_slopes_implementation(gpuann &data)
   const unsigned int threadCount = 256;
   dim3 dimBlock(threadCount, 1, 1);
   dim3 dimGrid(weightsCount / threadCount + 1, 1, 1);
-  
-  for(unsigned int instance = 1; instance < instanceCount; ++instance)
-  {
-    gpuann_merge_slopes_gpu_kernel<threadCount> <<<dimGrid, dimBlock>>> (weightsCount, data.d_trainSlopes, &(data.d_trainSlopes[instance * weightsCount]));
-  }
+
+  gpuann_merge_slopes_gpu_kernel<threadCount> <<<dimGrid, dimBlock>>> (weightsCount, data.d_trainSlopes, instanceCount);
 }
