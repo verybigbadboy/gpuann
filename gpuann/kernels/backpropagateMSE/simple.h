@@ -9,24 +9,24 @@
 //prevlayer block
 
 template <unsigned int blockSize, unsigned int prevActivationFunction>
-__global__ void fann_backpropagate_MSE_gpu_kernel(unsigned int prevNeuronsCount,
-                                                         unsigned int neuronsCount,
-                                                         fann_type *weights,
-                                                         fann_type *trainErrors,
-                                                         fann_type *prevTrainErrors,
-                                                         fann_type *prevValue,
-                                                         fann_type *prevSum,
-                                                         fann_type prevSteepness,
-                                                         unsigned int totalNeuronsCount,
-                                                         unsigned int totalWeightsCount)
+__global__ void fann_backpropagate_MSE_gpu_kernel(const unsigned int prevNeuronsCount,
+                                                  const unsigned int neuronsCount,
+                                                  fann_type *weights,
+                                                  fann_type *trainErrors,
+                                                  fann_type *prevTrainErrors,
+                                                  fann_type *prevValue,
+                                                  fann_type *prevSum,
+                                                  fann_type prevSteepness,
+                                                  const unsigned int totalNeuronsCount,
+                                                  const unsigned int totalWeightsCount)
 {
-  unsigned int tid                      = threadIdx.x;
-  unsigned int instance                 = blockIdx.y;
-  unsigned int weightPerNeuronCount     = prevNeuronsCount;
-  unsigned int neuronIndex              = tid + instance * totalNeuronsCount;
-  unsigned int prevLayerNeuron          = blockIdx.x;
-  unsigned int prevLayerNeuronInstanced = prevLayerNeuron + instance * totalNeuronsCount;
-  unsigned int weightBeginIndex         = tid * weightPerNeuronCount + instance * totalWeightsCount;
+  const unsigned int tid                      = threadIdx.x;
+  const unsigned int instance                 = blockIdx.y;
+  const unsigned int weightPerNeuronCount     = prevNeuronsCount;
+  const unsigned int neuronIndex              = tid + instance * totalNeuronsCount;
+  const unsigned int prevLayerNeuron          = blockIdx.x;
+  const unsigned int prevLayerNeuronInstanced = prevLayerNeuron + instance * totalNeuronsCount;
+  const unsigned int weightBeginIndex         = tid * weightPerNeuronCount + instance * totalWeightsCount;
 
   __shared__ fann_type sum[blockSize];
 
@@ -75,9 +75,7 @@ __global__ void fann_backpropagate_MSE_gpu_kernel(unsigned int prevNeuronsCount,
     __syncthreads();
   }
 
-  unsigned int localMemorySize = blockSize / 2;
-  if(localMemorySize > 32)
-    localMemorySize = 32;
+  const unsigned int localMemorySize = (blockSize / 2) > 32 ? 32 : (blockSize / 2);
 
   if (tid < localMemorySize)
   {
@@ -279,6 +277,8 @@ void fann_backpropagate_MSE_gpu_kernel_blockSize(unsigned int instanceCount, uns
     else
       if(threadsCount > 512)
         throw std::string("too many inputs");
+
+    threadsCount /= 2;
 
     switch (threadsCount)
     {
