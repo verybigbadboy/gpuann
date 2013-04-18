@@ -30,11 +30,8 @@ void gpuann_load_multidata(gpuann &multidata, gpuann &data, gpuannTrainData &tra
 {
   unsigned int instanceCount = trainData._dataCount;
 
-  for(unsigned int i = 0; i < instanceCount; i++)
-  {
-    copygpuannWeights(multidata, data, 0, i);
-    gpuann_loadInputs(multidata, trainData.d_input + trainData._inputCount * i, i);
-  }
+  copygpuannWeightsToMultidata(multidata, data);
+  copygpuannInputsToMultidata(multidata, trainData.d_input);
 }
 
 void gpuann_fann_train_parralel_update_slopes(gpuann &multidata, gpuann &data, gpuannTrainData &trainData)
@@ -93,8 +90,7 @@ void gpuann_fann_parallel_train_on_data(gpuann &data, gpuannTrainData &trainData
   gpuann multidata;
   creategpuann(multidata, ann, instanceCount);
 
-  for(unsigned int i = 0; i < instanceCount; i++)
-    copygpuannValues(multidata, data, 0, i);
+  copygpuannValuesToMultidata(multidata, data);
 
   for(unsigned int i = 0; i < maxEpochs; ++i)
   {
