@@ -7,8 +7,10 @@ void creategpuann(gpuann& nn, const fann *ann, unsigned int instanceCount = 1);
 void removegpuann(gpuann& nn);
 void copygpuann(gpuann& to, gpuann& from, unsigned int fromInstance = 0, unsigned int toInstance = 0, unsigned int instanceCount = 1);
 
-void copygpuannValues(gpuann& to, gpuann& from, unsigned int fromInstance = 0, unsigned int toInstance = 0, unsigned int instanceCount = 1);
-void copygpuannWeights(gpuann& to, gpuann& from, unsigned int fromInstance = 0, unsigned int toInstance = 0, unsigned int instanceCount = 1);
+void copygpuannValuesToMultidata(gpuann& to, gpuann& from);
+void copygpuannWeightsToMultidata(gpuann& to, gpuann& from);
+void copygpuannInputsToMultidata(gpuann& to, fann_type *d_inputs);
+
 void copygpuannSlopes(gpuann& to, gpuann& from, unsigned int fromInstance = 0, unsigned int toInstance = 0, unsigned int instanceCount = 1);
 
 void loadgpuann(gpuann& nn, const fann *ann, unsigned int instanceIndex = 0);

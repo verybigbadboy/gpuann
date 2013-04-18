@@ -109,30 +109,32 @@ void copygpuann(gpuann& to, gpuann& from, unsigned int fromInstance, unsigned in
   gpuann_d2dMemcpy(to.d_prevSteps         + weightsCount * toInstance, from.d_prevSteps         + weightsCount * fromInstance, weightsCount * instanceCount);
 }
 
-void copygpuannValues(gpuann& to, gpuann& from, unsigned int fromInstance, unsigned int toInstance, unsigned int instanceCount)
+void copygpuannValuesToMultidata(gpuann& to, gpuann& from)
 {
   if(to._fann != from._fann)
     throw "Neural networks should be created from one fann network";
 
-  const fann *ann = from._fann;
+  unsigned int neuronCount = from._neuronsCountPerInstance;
 
-  unsigned int neuronCount = ann->total_neurons;
-  unsigned int weightsCount = ((ann->last_layer - 1)->last_neuron - 1)->last_con;
-
-  gpuann_d2dMemcpy(to.d_valuesArray       + neuronCount  * toInstance, from.d_valuesArray       + neuronCount  * fromInstance, neuronCount  * instanceCount);
+  gpuann_d2dMemcpyMulti(to.d_valuesArray, from.d_valuesArray, neuronCount, to._instanceCount, 0, neuronCount);
 }
 
-void copygpuannWeights(gpuann& to, gpuann& from, unsigned int fromInstance, unsigned int toInstance, unsigned int instanceCount)
+void copygpuannWeightsToMultidata(gpuann& to, gpuann& from)
 {
   if(to._fann != from._fann)
     throw "Neural networks should be created from one fann network";
 
-  const fann *ann = from._fann;
+  unsigned int weightsCount = from._weightsCountPerInstance;
 
-  unsigned int neuronCount = ann->total_neurons;
-  unsigned int weightsCount = ((ann->last_layer - 1)->last_neuron - 1)->last_con;
+  gpuann_d2dMemcpyMulti(to.d_weightsArray, from.d_weightsArray, weightsCount, to._instanceCount, 0, weightsCount);
+}
 
-  gpuann_d2dMemcpy(to.d_weightsArray      + weightsCount * toInstance, from.d_weightsArray      + weightsCount * fromInstance, weightsCount * instanceCount);
+void copygpuannInputsToMultidata(gpuann& to, fann_type *d_inputs)
+{
+  const fann *ann = to._fann;
+  unsigned int neuronCount = to._neuronsCountPerInstance;
+
+  gpuann_d2dMemcpyMulti(to.d_valuesArray, d_inputs, ann->num_input, to._instanceCount, ann->num_input, neuronCount);
 }
 
 void copygpuannSlopes(gpuann& to, gpuann& from, unsigned int fromInstance, unsigned int toInstance, unsigned int instanceCount)
