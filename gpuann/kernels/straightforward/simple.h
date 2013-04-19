@@ -18,22 +18,26 @@ __global__ void gpuann_fann_run_gpu_kernel(const unsigned int neuronInputCount,
 {
   const unsigned int tid                  = threadIdx.x;
   const unsigned int instance             = blockIdx.y;
-  const unsigned int inputIndex           = tid;
-  const unsigned int inputIndexInstanced  = inputIndex + totalNeuronsCount * instance;
+  unsigned int inputIndex                 = tid;
   const unsigned int neuronIndex          = blockIdx.x;
-  const unsigned int weightIndex          = neuronInputCount * neuronIndex + inputIndex;
   const unsigned int neuronIndexInstanced = neuronIndex + totalNeuronsCount * instance;
-  const unsigned int weightIndexInstanced = weightIndex + totalWeightsCount * instance;
 
   __shared__ fann_type local[blockSize];
 
   fann_type l_summ = 0;
 
-  if(tid < neuronInputCount)
+  unsigned int inputIndexInstanced;
+  unsigned int weightIndex;
+  unsigned int weightIndexInstanced;
+
+  while(inputIndex < neuronInputCount)
   {
-    l_summ = (fann_type) (inputArray[inputIndexInstanced] * weightsArray[weightIndexInstanced]);
-    if((tid + blockSize) < neuronInputCount)
-      l_summ += (fann_type) (inputArray[inputIndexInstanced + blockSize] * weightsArray[weightIndexInstanced + blockSize]);
+    inputIndexInstanced  = inputIndex + totalNeuronsCount * instance;
+    weightIndex          = neuronInputCount * neuronIndex + inputIndex;
+    weightIndexInstanced = weightIndex + totalWeightsCount * instance;
+
+    l_summ     += (fann_type) (inputArray[inputIndexInstanced] * weightsArray[weightIndexInstanced]);
+    inputIndex += blockSize;
   }
 
   if(tid < blockSize)
@@ -74,12 +78,7 @@ __global__ void gpuann_fann_run_gpu_kernel(const unsigned int neuronInputCount,
     __syncthreads();
   }
 
-  //avoid of access after local memory
-  unsigned int localMemorySize = blockSize / 2;
-  if(localMemorySize > 32)
-    localMemorySize = 32;
-
-  if (tid < localMemorySize)
+  if (tid < 32)
   {
     // now that we are using warp-synchronous programming (below)
     // we need to declare our shared memory volatile so that the compiler
@@ -122,7 +121,7 @@ __global__ void gpuann_fann_run_gpu_kernel(const unsigned int neuronInputCount,
 
   if (tid == 0)
   {
-    fann_type neuron_sum = local[0];
+    fann_type neuron_sum = l_summ;
     neuron_sum *= layerSteepness;
 
     fann_type max_sum = 150 / layerSteepness;
@@ -180,11 +179,11 @@ break;
 }
 
 void gpuann_fann_run_simple_implementation(unsigned int neuronInputCount,
-                                           fann_type * inputArray,
-                                           fann_type * weightsArray,
-                                           fann_type *sumArray,
-                                           fann_type * outputArray,
-                                           fann_type layerSteepness,
+                                           fann_type   *inputArray,
+                                           fann_type   *weightsArray,
+                                           fann_type   *sumArray,
+                                           fann_type   *outputArray,
+                                           fann_type    layerSteepness,
                                            unsigned int layerActivationFunction,
                                            unsigned int neuronCount,
                                            unsigned int instanceCount,
@@ -192,6 +191,8 @@ void gpuann_fann_run_simple_implementation(unsigned int neuronInputCount,
                                            unsigned int totalWeightsCount)
 {
   unsigned int threadsCount = pow2roundup(neuronInputCount) / 2;
+  if(threadsCount < 32)
+    threadsCount = 32;
 
 #define gpuann_fann_run_gpu_kernel_activatedCase(X) case X: \
 gpuann_fann_run_gpu_kernel_activated <X> (neuronInputCount, inputArray, weightsArray, sumArray, outputArray, layerSteepness, layerActivationFunction, neuronCount, instanceCount, totalNeuronsCount, totalWeightsCount); \
@@ -199,13 +200,11 @@ break;
 
   switch (threadsCount)
   {
-    gpuann_fann_run_gpu_kernel_activatedCase(16);
     gpuann_fann_run_gpu_kernel_activatedCase(32);
     gpuann_fann_run_gpu_kernel_activatedCase(64);
     gpuann_fann_run_gpu_kernel_activatedCase(128);
+  default:
     gpuann_fann_run_gpu_kernel_activatedCase(256);
-    default:
-      throw std::string("Not supported thread count");
   }
 }
 
