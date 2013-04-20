@@ -44,21 +44,26 @@ __global__ void gpuann_fann_update_slopes_batch_gpu_kernel(unsigned int prevNeur
 {
   unsigned int tid                  = threadIdx.x;
   unsigned int instance             = blockIdx.y;
-  unsigned int neuronIndex          = blockIdx.x;
-  unsigned int prevLayerNeuronIndex = tid;
-  unsigned int neuronIndexInstanced = neuronIndex + instance * totalNeuronsCount;
+  unsigned int neuronIndex          = tid + blockIdx.x * blockSize;
 
-  fann_type error = trainErrors[neuronIndexInstanced];
-  unsigned int prevLayerNeuronIndexInstanced;
-  unsigned int slopesIndexInstanced;
-
-  while(prevLayerNeuronIndex < prevNeuronsCount)
+  if(neuronIndex < neuronsCount - 1) //TODO: bias
   {
-    prevLayerNeuronIndexInstanced = prevLayerNeuronIndex + instance * totalNeuronsCount;
-    slopesIndexInstanced          = prevLayerNeuronIndex + prevNeuronsCount * neuronIndex + instance * totalWeightsCount;
+    unsigned int neuronIndexInstanced = neuronIndex + instance * totalNeuronsCount;
 
-    neuronSlopes[slopesIndexInstanced] += error * prevValue[prevLayerNeuronIndexInstanced];
-    prevLayerNeuronIndex += blockSize;
+    fann_type error = trainErrors[neuronIndexInstanced];
+
+    unsigned int prevLayerNeuronIndex = 0;
+    unsigned int prevLayerNeuronIndexInstanced;
+    unsigned int slopesIndexInstanced;
+
+    while(prevLayerNeuronIndex < prevNeuronsCount)
+    {
+      prevLayerNeuronIndexInstanced = prevLayerNeuronIndex + instance * totalNeuronsCount;
+      slopesIndexInstanced          = prevLayerNeuronIndex + prevNeuronsCount * neuronIndex + instance * totalWeightsCount;
+
+      neuronSlopes[slopesIndexInstanced] += error * prevValue[prevLayerNeuronIndexInstanced];
+      prevLayerNeuronIndex += 1;
+    }
   }
 }
 
@@ -75,7 +80,7 @@ void gpuann_fann_update_slopes_batch_simple_implementation(unsigned int prevNeur
 gpuann_fann_update_slopes_batch_gpu_kernel<X> <<<dimGrid, dimBlock>>> (prevNeuronsCount, neuronsCount, trainErrors, neuronSlopes, prevValue, totalNeuronsCount, totalWeightsCount); \
 break;
 
-  unsigned int threadCount = pow2roundup(prevNeuronsCount) / 2;
+  unsigned int threadCount = pow2roundup(prevNeuronsCount);
   if(threadCount < 32)
     threadCount = 32;
 
@@ -83,7 +88,7 @@ break;
     threadCount = 256;
 
   dim3 dimBlock(threadCount, 1, 1);
-  dim3 dimGrid(neuronsCount - 1, instanceCount, 1); // TODO create bias if
+  dim3 dimGrid(neuronsCount / threadCount + 1, instanceCount, 1); // TODO create bias if
 
   switch (threadCount)
   {
