@@ -373,20 +373,17 @@ void gpuann_fann_run_select_best_implementation(unsigned int neuronInputCount,
   }
   else
   {
-    if(neuronInputCount <= 512)
-    {
-      gpuann_fann_run_simple_implementation(neuronInputCount,
-                                            inputArray,
-                                            weightsArray,
-                                            sumArray,
-                                            outputArray,
-                                            layerSteepness,
-                                            layerActivationFunction,
-                                            neuronCount,
-                                            instanceCount,
-                                            totalNeuronsCount,
-                                            totalWeightsCount);
-    }
+    gpuann_fann_run_simple_implementation(neuronInputCount,
+                                          inputArray,
+                                          weightsArray,
+                                          sumArray,
+                                          outputArray,
+                                          layerSteepness,
+                                          layerActivationFunction,
+                                          neuronCount,
+                                          instanceCount,
+                                          totalNeuronsCount,
+                                          totalWeightsCount);
   }
 }
 

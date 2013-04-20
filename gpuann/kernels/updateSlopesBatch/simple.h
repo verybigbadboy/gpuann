@@ -62,29 +62,6 @@ __global__ void gpuann_fann_update_slopes_batch_gpu_kernel(unsigned int prevNeur
   }
 }
 
-template <unsigned int blockSize>
-void gpuann_fann_update_slopes_batch_blockSize(unsigned int prevNeuronsCount,
-                                               unsigned int neuronsCount,
-                                               fann_type   *trainErrors,
-                                               fann_type   *neuronSlopes,
-                                               fann_type   *prevValue,
-                                               unsigned int totalNeuronsCount,
-                                               unsigned int totalWeightsCount,
-                                               unsigned int instanceCount
-                                              )
-{
-  dim3 dimBlock(blockSize, 1, 1);
-  dim3 dimGrid(neuronsCount - 1, instanceCount, 1); // TODO create bias if
-
-  gpuann_fann_update_slopes_batch_gpu_kernel <blockSize> <<<dimGrid, dimBlock>>>(prevNeuronsCount,
-                                                                           neuronsCount,
-                                                                           trainErrors,
-                                                                           neuronSlopes,
-                                                                           prevValue,
-                                                                           totalNeuronsCount,
-                                                                           totalWeightsCount);
-}
-
 void gpuann_fann_update_slopes_batch_simple_implementation(unsigned int prevNeuronsCount,
                                                            unsigned int neuronsCount,
                                                            fann_type   *trainErrors,
@@ -95,15 +72,21 @@ void gpuann_fann_update_slopes_batch_simple_implementation(unsigned int prevNeur
                                                            unsigned int instanceCount)
 {
 #define gpuann_fann_update_slopes_batch_blockSizeCase(X)   case X: \
-gpuann_fann_update_slopes_batch_blockSize<X>(prevNeuronsCount, neuronsCount, trainErrors, neuronSlopes, prevValue, totalNeuronsCount, totalWeightsCount, instanceCount); \
+gpuann_fann_update_slopes_batch_gpu_kernel<X> <<<dimGrid, dimBlock>>> (prevNeuronsCount, neuronsCount, trainErrors, neuronSlopes, prevValue, totalNeuronsCount, totalWeightsCount); \
 break;
 
-unsigned int threadCount = pow2roundup(prevNeuronsCount) / 2;
+  unsigned int threadCount = pow2roundup(prevNeuronsCount) / 2;
+  if(threadCount < 32)
+    threadCount = 32;
+
   if(threadCount > 256)
     threadCount = 256;
+
+  dim3 dimBlock(threadCount, 1, 1);
+  dim3 dimGrid(neuronsCount - 1, instanceCount, 1); // TODO create bias if
+
   switch (threadCount)
   {
-    gpuann_fann_update_slopes_batch_blockSizeCase(16);
     gpuann_fann_update_slopes_batch_blockSizeCase(32);
     gpuann_fann_update_slopes_batch_blockSizeCase(64);
     gpuann_fann_update_slopes_batch_blockSizeCase(128);
