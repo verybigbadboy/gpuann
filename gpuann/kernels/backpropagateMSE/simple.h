@@ -23,20 +23,22 @@ __global__ void fann_backpropagate_MSE_gpu_kernel(const unsigned int prevNeurons
   const unsigned int tid                      = threadIdx.x;
   const unsigned int instance                 = blockIdx.y;
   const unsigned int weightPerNeuronCount     = prevNeuronsCount;
-  const unsigned int neuronIndex              = tid + instance * totalNeuronsCount;
+  unsigned int neuronIndex                    = tid;
   const unsigned int prevLayerNeuron          = blockIdx.x;
   const unsigned int prevLayerNeuronInstanced = prevLayerNeuron + instance * totalNeuronsCount;
-  const unsigned int weightBeginIndex         = tid * weightPerNeuronCount + instance * totalWeightsCount;
+
 
   __shared__ fann_type sum[blockSize];
 
   fann_type mySum = 0;
 
-  if(tid < blockSize && tid < neuronsCount)
+  while (neuronIndex < neuronsCount)
   {
-    mySum = trainErrors[neuronIndex] * weights[weightBeginIndex + prevLayerNeuron];
-    if(tid + blockSize < neuronsCount)
-      mySum += trainErrors[neuronIndex + blockSize] * weights[weightBeginIndex + prevLayerNeuron + blockSize * weightPerNeuronCount];
+    const unsigned int neuronIndexInstanced = neuronIndex + instance * totalNeuronsCount;
+    const unsigned int weightBeginIndex     = neuronIndex * weightPerNeuronCount + instance * totalWeightsCount;
+
+    mySum       += trainErrors[neuronIndexInstanced] * weights[weightBeginIndex + prevLayerNeuron];
+    neuronIndex += blockSize;
   }
 
   if(tid < blockSize)
@@ -75,9 +77,7 @@ __global__ void fann_backpropagate_MSE_gpu_kernel(const unsigned int prevNeurons
     __syncthreads();
   }
 
-  const unsigned int localMemorySize = (blockSize / 2) > 32 ? 32 : (blockSize / 2);
-
-  if (tid < localMemorySize)
+  if (tid < 32)
   {
     // now that we are using warp-synchronous programming (below)
     // we need to declare our shared memory volatile so that the compiler
@@ -272,24 +272,19 @@ void fann_backpropagate_MSE_gpu_kernel_blockSize(unsigned int instanceCount, uns
   {
     unsigned int threadsCount = pow2roundup(neuronsCount);
 
-    if(threadsCount < 8)
-      threadsCount = 8;
-    else
-      if(threadsCount > 512)
-        throw std::string("too many inputs");
+    if(threadsCount < 32)
+      threadsCount = 32;
+
 
     threadsCount /= 2;
 
     switch (threadsCount)
     {
-      fann_backpropagate_MSE_gpu_kernel_activationFunction_case(4);
-      fann_backpropagate_MSE_gpu_kernel_activationFunction_case(8);
-      fann_backpropagate_MSE_gpu_kernel_activationFunction_case(16);
       fann_backpropagate_MSE_gpu_kernel_activationFunction_case(32);
       fann_backpropagate_MSE_gpu_kernel_activationFunction_case(64);
       fann_backpropagate_MSE_gpu_kernel_activationFunction_case(128);
+    default:
       fann_backpropagate_MSE_gpu_kernel_activationFunction_case(256);
-      fann_backpropagate_MSE_gpu_kernel_activationFunction_case(512);
     }
   }
 }
