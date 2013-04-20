@@ -44,21 +44,26 @@ __global__ void gpuann_fann_update_slopes_batch_gpu_kernel(unsigned int prevNeur
 {
   unsigned int tid                  = threadIdx.x;
   unsigned int instance             = blockIdx.y;
-  unsigned int neuronIndex          = blockIdx.x;
-  unsigned int prevLayerNeuronIndex = tid;
-  unsigned int neuronIndexInstanced = neuronIndex + instance * totalNeuronsCount;
+  unsigned int neuronIndex          = tid + blockIdx.x * blockSize;
 
-  fann_type error = trainErrors[neuronIndexInstanced];
-  unsigned int prevLayerNeuronIndexInstanced;
-  unsigned int slopesIndexInstanced;
-
-  while(prevLayerNeuronIndex < prevNeuronsCount)
+  if(neuronIndex < neuronsCount - 1) //TODO: bias
   {
-    prevLayerNeuronIndexInstanced = prevLayerNeuronIndex + instance * totalNeuronsCount;
-    slopesIndexInstanced          = prevLayerNeuronIndex + prevNeuronsCount * neuronIndex + instance * totalWeightsCount;
+    unsigned int neuronIndexInstanced = neuronIndex + instance * totalNeuronsCount;
 
-    neuronSlopes[slopesIndexInstanced] += error * prevValue[prevLayerNeuronIndexInstanced];
-    prevLayerNeuronIndex += blockSize;
+    fann_type error = trainErrors[neuronIndexInstanced];
+
+    unsigned int prevLayerNeuronIndex = 0;
+    unsigned int prevLayerNeuronIndexInstanced;
+    unsigned int slopesIndexInstanced;
+
+    while(prevLayerNeuronIndex < prevNeuronsCount)
+    {
+      prevLayerNeuronIndexInstanced = prevLayerNeuronIndex + instance * totalNeuronsCount;
+      slopesIndexInstanced          = prevLayerNeuronIndex + prevNeuronsCount * neuronIndex + instance * totalWeightsCount;
+
+      neuronSlopes[slopesIndexInstanced] += error * prevValue[prevLayerNeuronIndexInstanced];
+      prevLayerNeuronIndex += 1;
+    }
   }
 }
 
@@ -75,7 +80,7 @@ void gpuann_fann_update_slopes_batch_simple_implementation(unsigned int prevNeur
 gpuann_fann_update_slopes_batch_gpu_kernel<X> <<<dimGrid, dimBlock>>> (prevNeuronsCount, neuronsCount, trainErrors, neuronSlopes, prevValue, totalNeuronsCount, totalWeightsCount); \
 break;
 
-  unsigned int threadCount = pow2roundup(prevNeuronsCount) / 2;
+  unsigned int threadCount = pow2roundup(prevNeuronsCount);
   if(threadCount < 32)
     threadCount = 32;
 
@@ -83,7 +88,7 @@ break;
     threadCount = 256;
 
   dim3 dimBlock(threadCount, 1, 1);
-  dim3 dimGrid(neuronsCount - 1, instanceCount, 1); // TODO create bias if
+  dim3 dimGrid(neuronsCount / threadCount + 1, instanceCount, 1); // TODO create bias if
 
   switch (threadCount)
   {
@@ -145,37 +150,3 @@ void gpuann_fann_update_slopes_batch_implementation(gpuann &data, fann_layer *la
     }
   }
 }
-
-/* ORIGINAL
-void fann_update_slopes_batch(struct fann *ann, struct fann_layer *layer_begin, struct fann_layer *layer_end)
-{
-  struct fann_neuron *neuron_it, *last_neuron, *prev_neurons;
-  fann_type tmp_error;
-  unsigned int i, num_connections;
-
-  struct fann_neuron *first_neuron = ann->first_layer->first_neuron;
-  fann_type *error_begin = ann->train_errors;
-  fann_type *slope_begin, *neuron_slope;
-
-  slope_begin = ann->train_slopes;
-
-  prev_neurons = first_neuron;
-
-  for(; layer_begin <= layer_end; layer_begin++)
-  {
-    last_neuron = layer_begin->last_neuron;
-    prev_neurons = (layer_begin - 1)->first_neuron;
-
-    for(neuron_it = layer_begin->first_neuron; neuron_it != last_neuron; neuron_it++)
-    {
-      tmp_error = error_begin[neuron_it - first_neuron];
-      neuron_slope = slope_begin + neuron_it->first_con;
-      num_connections = neuron_it->last_con - neuron_it->first_con;
-      for(i = 0; i != num_connections; i++)
-      {
-        neuron_slope[i] += tmp_error * prev_neurons[i].value;
-      }
-    }
-  }
-}
-*/
