@@ -6,31 +6,11 @@
 #include <common/math.h>
 #include <string>
 
-//neuronSlopes actually points to prev layer values
-__global__ void gpuann_fann_update_slopes_batch_gpu_kernel(unsigned int prevNeuronsCount,
-                                                           unsigned int neuronsCount,
-                                                           fann_type *trainErrors,
-                                                           fann_type *neuronSlopes,
-                                                           fann_type *prevValue,
-                                                           unsigned int totalNeuronsCount,
-                                                           unsigned int totalWeightsCount)
-{
-  unsigned int tid                  = threadIdx.x;
-  unsigned int instance             = blockIdx.y;
-  unsigned int neuronIndex          = blockIdx.x + instance * totalNeuronsCount;
-  unsigned int prevLayerNeuronIndex = tid + instance * totalNeuronsCount;
-  unsigned int slopesIndex          = tid + prevNeuronsCount * blockIdx.x + instance * totalWeightsCount;
-
-  fann_type error = trainErrors[neuronIndex];
-  if(tid < prevNeuronsCount)
-    neuronSlopes[slopesIndex] += error * prevValue[prevLayerNeuronIndex];
-}
-
 __global__ void gpuann_fann_update_slopes_batch_multineuron_gpu_kernel(unsigned int prevNeuronsCount,
                                                                        unsigned int neuronsCount,
-                                                                       fann_type *trainErrors,
-                                                                       fann_type *neuronSlopes,
-                                                                       fann_type *prevValue,
+                                                                       fann_type   *trainErrors,
+                                                                       fann_type   *neuronSlopes,
+                                                                       fann_type   *prevValue,
                                                                        unsigned int totalNeuronsCount,
                                                                        unsigned int totalWeightsCount)
 {
@@ -49,6 +29,85 @@ __global__ void gpuann_fann_update_slopes_batch_multineuron_gpu_kernel(unsigned 
     fann_type error = trainErrors[neuronIndexInstanced];
     if(tid < prevNeuronsCount * neuronCountPerKernel)
       neuronSlopes[slopesIndex] += error * prevValue[prevLayerNeuronIndex];
+  }
+}
+
+//neuronSlopes actually points to prev layer values
+template <unsigned int blockSize>
+__global__ void gpuann_fann_update_slopes_batch_gpu_kernel(unsigned int prevNeuronsCount,
+                                                           unsigned int neuronsCount,
+                                                           fann_type *trainErrors,
+                                                           fann_type *neuronSlopes,
+                                                           fann_type *prevValue,
+                                                           unsigned int totalNeuronsCount,
+                                                           unsigned int totalWeightsCount)
+{
+  unsigned int tid                  = threadIdx.x;
+  unsigned int instance             = blockIdx.y;
+  unsigned int neuronIndex          = blockIdx.x;
+  unsigned int prevLayerNeuronIndex = tid;
+  unsigned int neuronIndexInstanced = neuronIndex + instance * totalNeuronsCount;
+
+  fann_type error = trainErrors[neuronIndexInstanced];
+  unsigned int prevLayerNeuronIndexInstanced;
+  unsigned int slopesIndexInstanced;
+
+  while(prevLayerNeuronIndex < prevNeuronsCount)
+  {
+    prevLayerNeuronIndexInstanced = prevLayerNeuronIndex + instance * totalNeuronsCount;
+    slopesIndexInstanced          = prevLayerNeuronIndex + prevNeuronsCount * neuronIndex + instance * totalWeightsCount;
+
+    neuronSlopes[slopesIndexInstanced] += error * prevValue[prevLayerNeuronIndexInstanced];
+    prevLayerNeuronIndex += blockSize;
+  }
+}
+
+template <unsigned int blockSize>
+void gpuann_fann_update_slopes_batch_blockSize(unsigned int prevNeuronsCount,
+                                               unsigned int neuronsCount,
+                                               fann_type   *trainErrors,
+                                               fann_type   *neuronSlopes,
+                                               fann_type   *prevValue,
+                                               unsigned int totalNeuronsCount,
+                                               unsigned int totalWeightsCount,
+                                               unsigned int instanceCount
+                                              )
+{
+  dim3 dimBlock(blockSize, 1, 1);
+  dim3 dimGrid(neuronsCount - 1, instanceCount, 1); // TODO create bias if
+
+  gpuann_fann_update_slopes_batch_gpu_kernel <blockSize> <<<dimGrid, dimBlock>>>(prevNeuronsCount,
+                                                                           neuronsCount,
+                                                                           trainErrors,
+                                                                           neuronSlopes,
+                                                                           prevValue,
+                                                                           totalNeuronsCount,
+                                                                           totalWeightsCount);
+}
+
+void gpuann_fann_update_slopes_batch_simple_implementation(unsigned int prevNeuronsCount,
+                                                           unsigned int neuronsCount,
+                                                           fann_type   *trainErrors,
+                                                           fann_type   *neuronSlopes,
+                                                           fann_type   *prevValue,
+                                                           unsigned int totalNeuronsCount,
+                                                           unsigned int totalWeightsCount,
+                                                           unsigned int instanceCount)
+{
+#define gpuann_fann_update_slopes_batch_blockSizeCase(X)   case X: \
+gpuann_fann_update_slopes_batch_blockSize<X>(prevNeuronsCount, neuronsCount, trainErrors, neuronSlopes, prevValue, totalNeuronsCount, totalWeightsCount, instanceCount); \
+break;
+
+unsigned int threadCount = pow2roundup(prevNeuronsCount) / 2;
+  if(threadCount > 256)
+    threadCount = 256;
+  switch (threadCount)
+  {
+    gpuann_fann_update_slopes_batch_blockSizeCase(16);
+    gpuann_fann_update_slopes_batch_blockSizeCase(32);
+    gpuann_fann_update_slopes_batch_blockSizeCase(64);
+    gpuann_fann_update_slopes_batch_blockSizeCase(128);
+    gpuann_fann_update_slopes_batch_blockSizeCase(256);
   }
 }
 
@@ -91,17 +150,15 @@ void gpuann_fann_update_slopes_batch_implementation(gpuann &data, fann_layer *la
     }
     else
     {
-      dim3 dimBlock(prevLayerSize, 1, 1);
-      dim3 dimGrid(layerSize - 1, instanceCount, 1); // TODO create bias if
-
-      gpuann_fann_update_slopes_batch_gpu_kernel<<<dimGrid, dimBlock>>>(prevLayerSize,
-        layerSize,
-        &(data.d_trainErrorsArray[layerNeuronShift]),
-        &(data.d_trainSlopes[layerWeightShift]),
-        &(data.d_valuesArray[prevLayerNeuronShift]),
-        data._neuronsCountPerInstance,
-        data._weightsCountPerInstance
-        );
+      gpuann_fann_update_slopes_batch_simple_implementation(prevLayerSize,
+                                                            layerSize,
+                                                            &(data.d_trainErrorsArray[layerNeuronShift]),
+                                                            &(data.d_trainSlopes[layerWeightShift]),
+                                                            &(data.d_valuesArray[prevLayerNeuronShift]),
+                                                            data._neuronsCountPerInstance,
+                                                            data._weightsCountPerInstance,
+                                                            instanceCount
+                                                           );
     }
   }
 }
