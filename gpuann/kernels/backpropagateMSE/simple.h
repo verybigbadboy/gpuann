@@ -6,19 +6,22 @@
 #include <base/derived.h>
 #include <string>
 
+#include <kernels/backpropagateMSE/parallel.h>
+#include <kernels/backpropagateMSE/multiNeuron.h>
+
 //prevlayer block
 
 template <unsigned int blockSize, unsigned int prevActivationFunction>
-__global__ void fann_backpropagate_MSE_gpu_kernel(const unsigned int prevNeuronsCount,
-                                                  const unsigned int neuronsCount,
-                                                  fann_type *weights,
-                                                  fann_type *trainErrors,
-                                                  fann_type *prevTrainErrors,
-                                                  fann_type *prevValue,
-                                                  fann_type *prevSum,
-                                                  fann_type prevSteepness,
-                                                  const unsigned int totalNeuronsCount,
-                                                  const unsigned int totalWeightsCount)
+__global__ void fann_backpropagate_MSE_simple_gpu_kernel(const unsigned int prevNeuronsCount,
+                                                         const unsigned int neuronsCount,
+                                                         fann_type *weights,
+                                                         fann_type *trainErrors,
+                                                         fann_type *prevTrainErrors,
+                                                         fann_type *prevValue,
+                                                         fann_type *prevSum,
+                                                         fann_type prevSteepness,
+                                                         const unsigned int totalNeuronsCount,
+                                                         const unsigned int totalWeightsCount)
 {
   const unsigned int tid                      = threadIdx.x;
   const unsigned int instance                 = blockIdx.y;
@@ -121,209 +124,131 @@ __global__ void fann_backpropagate_MSE_gpu_kernel(const unsigned int prevNeurons
     prevTrainErrors[prevLayerNeuronInstanced] = sum[0] * gpuann_fann_activation_derived<prevActivationFunction>(prevSteepness, prevValue[prevLayerNeuronInstanced], prevSum[prevLayerNeuronInstanced]);
 }
 
-template <unsigned int blockSize, unsigned int prevActivationFunction>
-__global__ void fann_backpropagate_MSE_parallel_gpu_kernel(const unsigned int prevNeuronsCount,
-                                                  const unsigned int neuronsCount,
+template <unsigned int blockSize>
+void fann_backpropagate_MSE_activationFunction(unsigned int instanceCount, unsigned int prevActivationFunction, unsigned int prevNeuronsCount, unsigned int neuronsCount, fann_type *weights, fann_type *trainErrors, fann_type *prevTrainErrors, fann_type *prevValue, fann_type *prevSum, fann_type prevSteepness
+, unsigned int totalNeuronsCount, unsigned int totalWeightsCount)
+{
+  dim3 dimBlock(blockSize, 1, 1);
+  dim3 dimGrid(prevNeuronsCount, instanceCount, 1);
+
+#define fann_backpropagate_MSE_simple_gpu_kernel_case(X)   case X: \
+fann_backpropagate_MSE_simple_gpu_kernel<blockSize, X> <<<dimGrid, dimBlock>>> (prevNeuronsCount, neuronsCount, weights, trainErrors, prevTrainErrors, prevValue, prevSum, prevSteepness, totalNeuronsCount, totalWeightsCount); \
+break;
+
+  switch(prevActivationFunction)
+  {
+    fann_backpropagate_MSE_simple_gpu_kernel_case(0);
+    fann_backpropagate_MSE_simple_gpu_kernel_case(1);
+    fann_backpropagate_MSE_simple_gpu_kernel_case(2);
+    fann_backpropagate_MSE_simple_gpu_kernel_case(3);
+    fann_backpropagate_MSE_simple_gpu_kernel_case(4);
+    fann_backpropagate_MSE_simple_gpu_kernel_case(5);
+    fann_backpropagate_MSE_simple_gpu_kernel_case(6);
+    fann_backpropagate_MSE_simple_gpu_kernel_case(7);
+    fann_backpropagate_MSE_simple_gpu_kernel_case(8);
+    fann_backpropagate_MSE_simple_gpu_kernel_case(9);
+    fann_backpropagate_MSE_simple_gpu_kernel_case(10);
+    fann_backpropagate_MSE_simple_gpu_kernel_case(11);
+    fann_backpropagate_MSE_simple_gpu_kernel_case(12);
+    fann_backpropagate_MSE_simple_gpu_kernel_case(13);
+    fann_backpropagate_MSE_simple_gpu_kernel_case(14);
+    fann_backpropagate_MSE_simple_gpu_kernel_case(15);
+  }
+}
+
+void fann_backpropagate_MSE_simple_implementation(unsigned int instanceCount,
+                                                  unsigned int prevActivationFunction,
+                                                  unsigned int prevNeuronsCount,
+                                                  unsigned int neuronsCount,
                                                   fann_type *weights,
                                                   fann_type *trainErrors,
                                                   fann_type *prevTrainErrors,
                                                   fann_type *prevValue,
                                                   fann_type *prevSum,
                                                   fann_type prevSteepness,
-                                                  const unsigned int totalNeuronsCount,
-                                                  const unsigned int totalWeightsCount)
+                                                  unsigned int totalNeuronsCount,
+                                                  unsigned int totalWeightsCount)
 {
-  const unsigned int tid                      = threadIdx.x;
-  const unsigned int instance                 = blockIdx.y;
-  const unsigned int weightPerNeuronCount     = prevNeuronsCount;
-  const unsigned int prevLayerNeuron          = tid + blockSize * blockIdx.x;
-  const unsigned int prevLayerNeuronInstanced = prevLayerNeuron + instance * totalNeuronsCount;
+  unsigned int threadsCount = pow2roundup(neuronsCount);
 
-  fann_type mySum = 0;
-  unsigned int neuronIndex = 0;
-  if(prevLayerNeuron < prevNeuronsCount)
-  {
-    while (neuronIndex < neuronsCount)
-    {
-      const unsigned int neuronIndexInstanced = neuronIndex + instance * totalNeuronsCount;
-      const unsigned int weightBeginIndex     = neuronIndex * weightPerNeuronCount + instance * totalWeightsCount;
+  if(threadsCount < 32)
+    threadsCount = 32;
 
-      mySum += trainErrors[neuronIndexInstanced] * weights[weightBeginIndex + prevLayerNeuron];
-      neuronIndex++;
-    }
-
-    prevTrainErrors[prevLayerNeuronInstanced] = mySum * gpuann_fann_activation_derived<prevActivationFunction>(prevSteepness, prevValue[prevLayerNeuronInstanced], prevSum[prevLayerNeuronInstanced]);
-  }
-}
-
-template <unsigned int prevActivationFunction>
-__global__ void fann_backpropagate_MSE_multineuron_gpu_kernel(unsigned int prevNeuronsCount,
-                                                                     unsigned int neuronsCount,
-                                                                     fann_type *weights,
-                                                                     fann_type *trainErrors,
-                                                                     fann_type *prevTrainErrors,
-                                                                     fann_type *prevValue,
-                                                                     fann_type *prevSum,
-                                                                     fann_type prevSteepness,
-                                                                     unsigned int totalNeuronsCount,
-                                                                     unsigned int totalWeightsCount)
-{
-  const unsigned int threadCount        = 256;
-  unsigned int tid                      = threadIdx.x;
-  unsigned int instance                 = blockIdx.y;
-  unsigned int weightPerNeuronCount     = prevNeuronsCount;
-  unsigned int neuronIndexInKernel      = tid / neuronsCount;
-  unsigned int neuronsPerKernel         = threadCount / neuronsCount;
-  unsigned int neuronIndex              = tid % neuronsCount;
-  unsigned int neuronIndexInstanced     = neuronIndex + instance * totalNeuronsCount;
-  unsigned int prevLayerNeuron          = blockIdx.x * neuronsPerKernel + neuronIndexInKernel;
-  unsigned int prevLayerNeuronInstanced = prevLayerNeuron + instance * totalNeuronsCount;
-  unsigned int weightBeginIndex         = neuronIndex * weightPerNeuronCount + instance * totalWeightsCount;
-
-  __shared__ fann_type sum[threadCount];
-
-  fann_type l_summ = 0;
-
-  if(tid < neuronsPerKernel * neuronsCount && prevLayerNeuron < prevNeuronsCount)
-  {
-    l_summ = trainErrors[neuronIndexInstanced] * weights[weightBeginIndex + prevLayerNeuron];
-
-    sum[tid] = l_summ;
-  }
-
-  __syncthreads();
-
-  if (tid < neuronsPerKernel * neuronsCount && prevLayerNeuron < prevNeuronsCount)
-  {
-    volatile fann_type *smem = sum;
-
-    if(neuronsCount > 16)
-      if(neuronIndex < 16)
-        if(neuronIndex + 16 < neuronsCount)
-          smem[tid] = l_summ = l_summ + smem[tid + 16];
-
-    if(neuronsCount > 8)
-      if(neuronIndex < 8)
-        if(neuronIndex + 8 < neuronsCount)
-          smem[tid] = l_summ = l_summ + smem[tid + 8];
-
-    if(neuronsCount > 4)
-      if(neuronIndex < 4)
-        if(neuronIndex + 4 < neuronsCount)
-          smem[tid] = l_summ = l_summ + smem[tid + 4];
-
-    if(neuronsCount > 2)
-      if(neuronIndex < 2)
-        if(neuronIndex + 2 < neuronsCount)
-          smem[tid] = l_summ = l_summ + smem[tid + 2];
-
-    if(neuronsCount > 1)
-      if(neuronIndex < 1)
-        if(neuronIndex + 1 < neuronsCount)
-          smem[tid] = l_summ = l_summ + smem[tid + 1];
-  }
-  __syncthreads();
-
-  if (neuronIndex == 0 && prevLayerNeuron < prevNeuronsCount && neuronIndexInKernel < neuronsPerKernel)
-  {
-    prevTrainErrors[prevLayerNeuronInstanced] = sum[tid] * gpuann_fann_activation_derived<prevActivationFunction>(prevSteepness, prevValue[prevLayerNeuronInstanced], prevSum[prevLayerNeuronInstanced]);
-  }
-}
-
-#define fann_backpropagate_MSE_multineuron_gpu_kernel_case(X)   case X: \
-fann_backpropagate_MSE_multineuron_gpu_kernel<X> <<<dimGrid, dimBlock>>> (prevNeuronsCount, neuronsCount, weights, trainErrors, prevTrainErrors, prevValue, prevSum, prevSteepness, totalNeuronsCount, totalWeightsCount); \
-break;
-
-#define fann_backpropagate_MSE_gpu_kernel_case(X)   case X: \
-fann_backpropagate_MSE_parallel_gpu_kernel<blockSize, X> <<<dimGrid, dimBlock>>> (prevNeuronsCount, neuronsCount, weights, trainErrors, prevTrainErrors, prevValue, prevSum, prevSteepness, totalNeuronsCount, totalWeightsCount); \
-break;
-
-template <unsigned int blockSize>
-void fann_backpropagate_MSE_gpu_kernel_activationFunction(unsigned int instanceCount, unsigned int prevActivationFunction, unsigned int prevNeuronsCount, unsigned int neuronsCount, fann_type *weights, fann_type *trainErrors, fann_type *prevTrainErrors, fann_type *prevValue, fann_type *prevSum, fann_type prevSteepness
-, unsigned int totalNeuronsCount, unsigned int totalWeightsCount)
-{
-  dim3 dimBlock(blockSize, 1, 1);
-  dim3 dimGrid(neuronsCount / blockSize + 1, instanceCount, 1);
-
-  switch(prevActivationFunction)
-  {
-    fann_backpropagate_MSE_gpu_kernel_case(0);
-    fann_backpropagate_MSE_gpu_kernel_case(1);
-    fann_backpropagate_MSE_gpu_kernel_case(2);
-    fann_backpropagate_MSE_gpu_kernel_case(3);
-    fann_backpropagate_MSE_gpu_kernel_case(4);
-    fann_backpropagate_MSE_gpu_kernel_case(5);
-    fann_backpropagate_MSE_gpu_kernel_case(6);
-    fann_backpropagate_MSE_gpu_kernel_case(7);
-    fann_backpropagate_MSE_gpu_kernel_case(8);
-    fann_backpropagate_MSE_gpu_kernel_case(9);
-    fann_backpropagate_MSE_gpu_kernel_case(10);
-    fann_backpropagate_MSE_gpu_kernel_case(11);
-    fann_backpropagate_MSE_gpu_kernel_case(12);
-    fann_backpropagate_MSE_gpu_kernel_case(13);
-    fann_backpropagate_MSE_gpu_kernel_case(14);
-    fann_backpropagate_MSE_gpu_kernel_case(15);
-  }
-}
+  threadsCount /= 2;
 
 #define fann_backpropagate_MSE_gpu_kernel_activationFunction_case(X)   case X: \
-fann_backpropagate_MSE_gpu_kernel_activationFunction<X> (instanceCount, prevActivationFunction, prevNeuronsCount, neuronsCount, weights, trainErrors, prevTrainErrors, prevValue, prevSum, prevSteepness, totalNeuronsCount, totalWeightsCount); \
+  fann_backpropagate_MSE_activationFunction<X> (instanceCount, prevActivationFunction, prevNeuronsCount, neuronsCount, weights, trainErrors, prevTrainErrors, prevValue, prevSum, prevSteepness, totalNeuronsCount, totalWeightsCount); \
 break;
 
-void fann_backpropagate_MSE_gpu_kernel_blockSize(unsigned int instanceCount, unsigned int prevActivationFunction, unsigned int prevNeuronsCount, unsigned int neuronsCount, fann_type *weights, fann_type *trainErrors, fann_type *prevTrainErrors, fann_type *prevValue, fann_type *prevSum, fann_type prevSteepness
-, unsigned int totalNeuronsCount, unsigned int totalWeightsCount)
+  switch (threadsCount)
+  {
+    fann_backpropagate_MSE_gpu_kernel_activationFunction_case(32);
+    fann_backpropagate_MSE_gpu_kernel_activationFunction_case(64);
+    fann_backpropagate_MSE_gpu_kernel_activationFunction_case(128);
+  default:
+    fann_backpropagate_MSE_gpu_kernel_activationFunction_case(256);
+  }
+}
+
+void fann_backpropagate_MSE_select_implementation(unsigned int instanceCount,
+                                                  unsigned int prevActivationFunction,
+                                                  unsigned int prevNeuronsCount,
+                                                  unsigned int neuronsCount,
+                                                  fann_type *weights,
+                                                  fann_type *trainErrors,
+                                                  fann_type *prevTrainErrors,
+                                                  fann_type *prevValue,
+                                                  fann_type *prevSum,
+                                                  fann_type prevSteepness,
+                                                  unsigned int totalNeuronsCount,
+                                                  unsigned int totalWeightsCount)
 {
   if(neuronsCount < 32)
   {
-    unsigned int threadNeeded = pow2roundup(neuronsCount * prevNeuronsCount);
-    if(threadNeeded > 256)
-      threadNeeded = 256;
-    unsigned int prevNeuronsPerBlock = threadNeeded / neuronsCount;
-    unsigned int blocksNeeded = prevNeuronsCount / prevNeuronsPerBlock + 1;
-    dim3 dimBlock(threadNeeded, 1, 1);
-    dim3 dimGrid(blocksNeeded, instanceCount, 1);
-
-    switch(prevActivationFunction)
-    {
-      fann_backpropagate_MSE_multineuron_gpu_kernel_case(0);
-      fann_backpropagate_MSE_multineuron_gpu_kernel_case(1);
-      fann_backpropagate_MSE_multineuron_gpu_kernel_case(2);
-      fann_backpropagate_MSE_multineuron_gpu_kernel_case(3);
-      fann_backpropagate_MSE_multineuron_gpu_kernel_case(4);
-      fann_backpropagate_MSE_multineuron_gpu_kernel_case(5);
-      fann_backpropagate_MSE_multineuron_gpu_kernel_case(6);
-      fann_backpropagate_MSE_multineuron_gpu_kernel_case(7);
-      fann_backpropagate_MSE_multineuron_gpu_kernel_case(8);
-      fann_backpropagate_MSE_multineuron_gpu_kernel_case(9);
-      fann_backpropagate_MSE_multineuron_gpu_kernel_case(10);
-      fann_backpropagate_MSE_multineuron_gpu_kernel_case(11);
-      fann_backpropagate_MSE_multineuron_gpu_kernel_case(12);
-      fann_backpropagate_MSE_multineuron_gpu_kernel_case(13);
-      fann_backpropagate_MSE_multineuron_gpu_kernel_case(14);
-      fann_backpropagate_MSE_multineuron_gpu_kernel_case(15);
-    }
+    fann_backpropagate_MSE_multineuron_implementation(instanceCount,
+                                                      prevActivationFunction,
+                                                      prevNeuronsCount,
+                                                      neuronsCount,
+                                                      weights,
+                                                      trainErrors,
+                                                      prevTrainErrors,
+                                                      prevValue,
+                                                      prevSum,
+                                                      prevSteepness,
+                                                      totalNeuronsCount,
+                                                      totalWeightsCount);
   }
   else
   {
-    unsigned int threadsCount = pow2roundup(prevNeuronsCount);
+    if(1)
+      fann_backpropagate_MSE_parallel_implementation(instanceCount,
+                                                     prevActivationFunction,
+                                                     prevNeuronsCount,
+                                                     neuronsCount,
+                                                     weights,
+                                                     trainErrors,
+                                                     prevTrainErrors,
+                                                     prevValue,
+                                                     prevSum,
+                                                     prevSteepness,
+                                                     totalNeuronsCount,
+                                                     totalWeightsCount);
+    else
+      fann_backpropagate_MSE_simple_implementation(instanceCount,
+                                                   prevActivationFunction,
+                                                   prevNeuronsCount,
+                                                   neuronsCount,
+                                                   weights,
+                                                   trainErrors,
+                                                   prevTrainErrors,
+                                                   prevValue,
+                                                   prevSum,
+                                                   prevSteepness,
+                                                   totalNeuronsCount,
+                                                   totalWeightsCount);
 
-    if(threadsCount < 32)
-      threadsCount = 32;
-
-
-    threadsCount /= 2;
-
-    switch (threadsCount)
-    {
-      fann_backpropagate_MSE_gpu_kernel_activationFunction_case(32);
-      fann_backpropagate_MSE_gpu_kernel_activationFunction_case(64);
-      fann_backpropagate_MSE_gpu_kernel_activationFunction_case(128);
-    default:
-      fann_backpropagate_MSE_gpu_kernel_activationFunction_case(256);
-    }
   }
 }
-
 
 void gpuann_fann_backpropagate_MSE_implementation_gpu(gpuann &data)
 {
@@ -345,7 +270,7 @@ void gpuann_fann_backpropagate_MSE_implementation_gpu(gpuann &data)
     unsigned int prevActivationFunction = prevLayerFirstNeuron->activation_function;
     fann_type prevSteepness = prevLayerFirstNeuron->activation_steepness;
 
-    fann_backpropagate_MSE_gpu_kernel_blockSize(
+    fann_backpropagate_MSE_select_implementation(
       instanceCount,
       prevActivationFunction,
       prevLayerSize,
