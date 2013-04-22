@@ -73,14 +73,19 @@ void gpuann_fann_train_epoch(gpuann &data, gpuannTrainData &trainData)
   {
     case GPUANN_FANN_TRAIN_QUICKPROP:
       gpuann_fann_train_epoch_quickprop(data, trainData);
+      break;
     case GPUANN_FANN_TRAIN_RPROP:
       gpuann_fann_train_epoch_irpropm(data, trainData);
+      break;
     case GPUANN_FANN_TRAIN_SARPROP:
       gpuann_fann_train_epoch_sarprop(data, trainData);
+      break;
     case GPUANN_FANN_TRAIN_BATCH:
       gpuann_fann_train_epoch_batch(data, trainData);
+      break;
     case GPUANN_FANN_TRAIN_INCREMENTAL:
       gpuann_fann_train_epoch_incremental(data, trainData);
+      break;
   }
 }
 
