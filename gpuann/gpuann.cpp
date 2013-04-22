@@ -7,6 +7,7 @@
 #include <kernels/straightforward/straightforward.h>
 #include <kernels/updateWeights/updateWeights.h>
 #include <gpuannTrain.h>
+#include <gpuannParallelTrain.h>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -122,6 +123,28 @@ void gpuann_fann_train_on_data(struct fann *ann, struct fann_train_data *train, 
     error = gpuann_fann_train_epoch(data, trainData);
     //TODO desired error
   }
+
+  savegpuann(data, ann);
+
+  removegpuann(data);
+  removegpuannTrainData(trainData);
+}
+
+void gpuann_fann_parallel_train_on_data(struct fann *ann, struct fann_train_data *train, unsigned int maxEpochs)
+{
+  float error;
+  unsigned int i;
+
+  gpuann data;
+  gpuannTrainData trainData;
+
+  creategpuannTrainData(trainData, train);
+
+  (ann->first_layer->last_neuron - 1)->value = 1; ///bias input TODO!
+  creategpuann(data, ann);
+  loadgpuann(data, ann);
+
+  gpuann_fann_parallel_train_on_data(data, trainData, maxEpochs);
 
   savegpuann(data, ann);
 
