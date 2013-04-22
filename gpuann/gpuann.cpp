@@ -120,8 +120,7 @@ void gpuann_fann_train_on_data(struct fann *ann, struct fann_train_data *train, 
 
   for(i = 1; i <= maxEpochs; i++)
   {
-    error = gpuann_fann_train_epoch(data, trainData);
-    //TODO desired error
+    gpuann_fann_train_epoch(data, trainData);
   }
 
   savegpuann(data, ann);

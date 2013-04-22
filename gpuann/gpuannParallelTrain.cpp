@@ -71,15 +71,13 @@ void update_weights(gpuann &data, gpuannTrainData &trainData)
   }
 }
 
-float gpuann_fann_parallel_train_epoch(gpuann &multidata, gpuann &data, gpuannTrainData &trainData)
+void gpuann_fann_parallel_train_epoch(gpuann &multidata, gpuann &data, gpuannTrainData &trainData)
 {
   gpuann_fann_reset_MSE(data);
 
   gpuann_fann_train_parralel_update_slopes(multidata, data, trainData);
 
   update_weights(data, trainData);
-
-  return gpuann_fann_get_MSE(data);
 }
 
 void gpuann_fann_parallel_train_on_data(gpuann &data, gpuannTrainData &trainData, unsigned int maxEpochs)
