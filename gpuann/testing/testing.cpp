@@ -138,7 +138,7 @@ void fulltest()
   
   for(int i = 1; i < 4; ++i)
   {
-    for(int j = 30; j < 512; j *=2)
+    for(int j = 30; j < 1024; j *=2)
     {
       printf("Neural network type: %d %d\n", i, j);
       fann *ann = createSpecificTrainedFann(i, j);

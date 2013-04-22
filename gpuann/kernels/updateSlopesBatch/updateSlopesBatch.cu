@@ -1,1 +1,1 @@
-#include <kernels/updateSlopesBatch/simple.h>
+#include <kernels/updateSlopesBatch/main.h>
