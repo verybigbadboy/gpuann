@@ -24,7 +24,7 @@ __global__ void gpuann_fann_update_slopes_batch_multineuron_gpu_kernel(unsigned 
   unsigned int slopesIndex          = actualPrevNeuron + prevNeuronsCount * neuronIndex + instance * totalWeightsCount;
   unsigned int neuronIndexInstanced = neuronIndex + instance * totalNeuronsCount;
 
-  if(neuronIndex < (neuronsCount - 1)) //due to bias
+  if(neuronIndex < neuronsCount)
   {
     fann_type error = trainErrors[neuronIndexInstanced];
     if(tid < prevNeuronsCount * neuronCountPerKernel)
@@ -123,13 +123,13 @@ void gpuann_fann_update_slopes_batch_implementation(gpuann &data, fann_layer *la
       dim3 dimGrid(blocksNeeded, instanceCount, 1); // TODO create bias if
 
       gpuann_fann_update_slopes_batch_multineuron_gpu_kernel<<<dimGrid, dimBlock>>>(prevLayerSize,
-        layerSize,
-        &(data.d_trainErrorsArray[layerNeuronShift]),
-        &(data.d_trainSlopes[layerWeightShift]),
-        &(data.d_valuesArray[prevLayerNeuronShift]),
-        data._neuronsCountPerInstance,
-        data._weightsCountPerInstance
-        );
+                                                                                    layerSize - 1,  //due to bias
+                                                                                    &(data.d_trainErrorsArray[layerNeuronShift]),
+                                                                                    &(data.d_trainSlopes[layerWeightShift]),
+                                                                                    &(data.d_valuesArray[prevLayerNeuronShift]),
+                                                                                    data._neuronsCountPerInstance,
+                                                                                    data._weightsCountPerInstance
+                                                                                    );
     }
     else
     {
