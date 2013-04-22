@@ -80,30 +80,6 @@ void gpuann_fann_multirun(struct fann * ann, fann_type ** input, unsigned int in
   removegpuann(gann);
 }
 
-void gpuann_fann_train(struct fann *ann, fann_type * input, fann_type * desired_output)
-{
-  check(ann);
-  loadInputs(ann, input);
-
-  gpuann gann;
-  creategpuann(gann, ann);
-  loadgpuann(gann, ann);
-
-  fann_type *d_desired_output;
-  cudaMalloc((void **)&(d_desired_output), ann->num_output * sizeof(fann_type));
-  cudaMemcpy(d_desired_output, desired_output, ann->num_output * sizeof(fann_type), cudaMemcpyHostToDevice);
-
-  gpuann_fann_run_implementation(gann);
-  gpuann_fann_compute_MSE_implementation_gpu(gann, d_desired_output);
-  gpuann_fann_backpropagate_MSE_implementation_gpu(gann);
-  gpuann_fann_update_weights_implementation(gann);
-  cudaFree(d_desired_output);
-
-  savegpuann(gann, ann);
-
-  removegpuann(gann);
-}
-
 void gpuann_fann_train_on_data(struct fann *ann, struct fann_train_data *train, unsigned int maxEpochs)
 {
   float error;
