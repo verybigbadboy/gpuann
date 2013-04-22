@@ -64,6 +64,10 @@ void testOneEpochTrain(fann *ann, fann_train_data* train, unsigned int trainingA
 
 void testOneEpochParallelTrain(fann *ann, fann_train_data* train, unsigned int trainingAlgorithm, const std::string &header)
 {
+  unsigned int epochCountGPU = 10;
+  unsigned int epochCountCPU = 0;
+  float timeGPU, timeCPU;
+
   printf("TEST: One Epoch Parallel %20s ", header.c_str());
   bool passed = true;
 
@@ -80,7 +84,7 @@ void testOneEpochParallelTrain(fann *ann, fann_train_data* train, unsigned int t
     cudaEventCreate(&stop);
     cudaEventRecord( start, 0 );
 
-    gpuann_fann_parallel_train_on_data(gpunn, train, 1000);
+    gpuann_fann_parallel_train_on_data(gpunn, train, epochCountGPU);
 
     cudaEventRecord( stop, 0 );
     cudaEventSynchronize( stop );
@@ -89,18 +93,21 @@ void testOneEpochParallelTrain(fann *ann, fann_train_data* train, unsigned int t
     cudaEventDestroy( stop );
 
     printf(" time: %10.5f", time);
+    timeGPU = time;
   }
 
   {
     clock_t start = clock();
 
-    for(int i = 0; i < 1000; ++i)
+    for(int i = 0; i < epochCountCPU; ++i)
       fann_train_epoch(cpunn, train);
 
     clock_t ends = clock();
     printf(" time: %10.5f ", (double) (ends - start) / CLOCKS_PER_SEC * 1000. );
+    timeCPU = (double) (ends - start) / CLOCKS_PER_SEC * 1000;
   }
 
+  printf(" faster: %f   ", (timeCPU / epochCountCPU) / (timeGPU / epochCountGPU));
 
   //passed &= isAlmostSameArrays(gpunn->weights, cpunn->weights, cpunn->total_connections, true, "WEIGHTS:");
 
@@ -117,11 +124,11 @@ void testOneEpochParallelTrain(fann *ann, fann_train_data* train, unsigned int t
 void testTrainMethods(fann *ann, fann_train_data* train)
 {
   /*
-  testOneEpochTrain(ann, train, FANN_TRAIN_INCREMENTAL, "Incremental Train");
-  testOneEpochTrain(ann, train, FANN_TRAIN_BATCH,       "Batch Train");
-  testOneEpochTrain(ann, train, FANN_TRAIN_QUICKPROP,   "QuickProp Train");
-  testOneEpochTrain(ann, train, FANN_TRAIN_RPROP,       "RProp Train");
-  testOneEpochTrain(ann, train, FANN_TRAIN_SARPROP,     "SarProp Train");
+  *  testOneEpochTrain(ann, train, FANN_TRAIN_INCREMENTAL, "Incremental Train");
+  *  testOneEpochTrain(ann, train, FANN_TRAIN_BATCH,       "Batch Train");
+  *  testOneEpochTrain(ann, train, FANN_TRAIN_QUICKPROP,   "QuickProp Train");
+  *  testOneEpochTrain(ann, train, FANN_TRAIN_RPROP,       "RProp Train");
+  *  testOneEpochTrain(ann, train, FANN_TRAIN_SARPROP,     "SarProp Train");
   */
 
 
