@@ -1,4 +1,3 @@
-#include <gpuannParallelTrain.h>
 #include <gpuannTrain.h>
 #include <base/gpuannDataCreator.h>
 
@@ -22,9 +21,6 @@ void gpuann_fann_train_parralel_multi_update_slopes(gpuann &multidata, gpuannTra
   gpuann_fann_backpropagate_MSE_implementation_gpu(multidata);
   gpuann_fann_update_slopes_batch_implementation(multidata, ann->first_layer + 1, ann->last_layer - 1);
 }
-
-#include <cuda.h>
-#include <cuda_runtime.h>
 
 void gpuann_load_multidata(gpuann &multidata, gpuann &data, gpuannTrainData &trainData)
 {
