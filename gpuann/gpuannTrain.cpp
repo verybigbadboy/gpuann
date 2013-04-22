@@ -15,9 +15,6 @@
 #include <kernels/updateWeightsQuickprop/updateWeigthsQuickprop.h>
 #include <kernels/updateWeightsSarprop/updateWeightsSarprop.h>
 
-#include <cuda.h>
-#include <cuda_runtime.h>
-
 void gpuann_fann_train_epoch_base(gpuann &data, gpuannTrainData &trainData)
 {
   const fann *ann = data._fann;

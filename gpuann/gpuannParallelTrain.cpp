@@ -1,4 +1,4 @@
-#include <gpuannTrain.h>
+#include <gpuannParallelTrain.h>
 #include <base/gpuannDataCreator.h>
 
 #include <kernels/backpropagateMSE/backpropagateMSErun.h>
