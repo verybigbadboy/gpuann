@@ -14,13 +14,12 @@ __global__ void gpuann_fann_update_slopes_batch_big_neurons_gpu_kernel(unsigned 
   unsigned int neuronIndex          = 0;
   unsigned int prevLayerNeuronIndex = tid + blockSize * blockIdx.x;
 
-
-  unsigned int prevLayerNeuronIndexInstanced = prevLayerNeuronIndex + instance * totalNeuronsCount;
-  fann_type prev_value = prevValue[prevLayerNeuronIndexInstanced];
-
   unsigned int slopesIndexInstanced;
   if(prevLayerNeuronIndex < prevNeuronsCount)
   {
+    unsigned int prevLayerNeuronIndexInstanced = prevLayerNeuronIndex + instance * totalNeuronsCount;
+    fann_type prev_value = prevValue[prevLayerNeuronIndexInstanced];
+
     while(neuronIndex < neuronsCount) //TODO BIAS
     {
       unsigned int neuronIndexInstanced = neuronIndex + instance * totalNeuronsCount;

@@ -42,19 +42,3 @@ void gpuann_fann_update_weights_batch_implementation(gpuann &data, unsigned int 
                                                                       data._weightsCountPerInstance
                                                                      );
 }
-
-/*
-void fann_update_weights_batch(struct fann *ann, unsigned int num_data, unsigned int first_weight, unsigned int past_end)
-{
-  fann_type *train_slopes = ann->train_slopes;
-  fann_type *weights = ann->weights;
-  const float epsilon = ann->learning_rate / num_data;
-  unsigned int i = first_weight;
-  
-  for(; i != past_end; i++)
-  {
-    weights[i] += train_slopes[i] * epsilon;
-    train_slopes[i] = 0.0;
-  }
-}
-*/

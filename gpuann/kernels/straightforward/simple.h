@@ -90,27 +90,27 @@ __global__ void gpuann_fann_run_gpu_kernel(const unsigned int neuronInputCount,
       smem[tid] = l_summ = l_summ + smem[tid + 32];
     }
 
-    if (blockSize >=  32)
+    if (blockSize >=  32 && tid < 16)
     {
       smem[tid] = l_summ = l_summ + smem[tid + 16];
     }
 
-    if (blockSize >=  16)
+    if (blockSize >=  16 && tid < 8)
     {
       smem[tid] = l_summ = l_summ + smem[tid + 8];
     }
 
-    if (blockSize >=   8)
+    if (blockSize >=   8 && tid < 4)
     {
       smem[tid] = l_summ = l_summ + smem[tid + 4];
     }
 
-    if (blockSize >=   4)
+    if (blockSize >=   4 && tid < 2)
     {
       smem[tid] = l_summ = l_summ + smem[tid + 2];
     }
 
-    if (blockSize >=   2)
+    if (blockSize >=   2 && tid < 1)
     {
       smem[tid] = l_summ = l_summ + smem[tid + 1];
     }

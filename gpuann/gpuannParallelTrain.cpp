@@ -1,5 +1,4 @@
 #include <gpuannParallelTrain.h>
-#include <gpuannTrain.h>
 #include <base/gpuannDataCreator.h>
 
 #include <kernels/backpropagateMSE/backpropagateMSErun.h>
@@ -22,9 +21,6 @@ void gpuann_fann_train_parralel_multi_update_slopes(gpuann &multidata, gpuannTra
   gpuann_fann_backpropagate_MSE_implementation_gpu(multidata);
   gpuann_fann_update_slopes_batch_implementation(multidata, ann->first_layer + 1, ann->last_layer - 1);
 }
-
-#include <cuda.h>
-#include <cuda_runtime.h>
 
 void gpuann_load_multidata(gpuann &multidata, gpuann &data, gpuannTrainData &trainData)
 {
@@ -71,15 +67,11 @@ void update_weights(gpuann &data, gpuannTrainData &trainData)
   }
 }
 
-float gpuann_fann_parallel_train_epoch(gpuann &multidata, gpuann &data, gpuannTrainData &trainData)
+void gpuann_fann_parallel_train_epoch(gpuann &multidata, gpuann &data, gpuannTrainData &trainData)
 {
-  gpuann_fann_reset_MSE(data);
-
   gpuann_fann_train_parralel_update_slopes(multidata, data, trainData);
 
   update_weights(data, trainData);
-
-  return gpuann_fann_get_MSE(data);
 }
 
 void gpuann_fann_parallel_train_on_data(gpuann &data, gpuannTrainData &trainData, unsigned int maxEpochs)
@@ -98,26 +90,4 @@ void gpuann_fann_parallel_train_on_data(gpuann &data, gpuannTrainData &trainData
   }
 
   removegpuann(multidata);
-}
-
-void gpuann_fann_parallel_train_on_data(struct fann *ann, struct fann_train_data *train, unsigned int maxEpochs)
-{
-  float error;
-  unsigned int i;
-
-  gpuann data;
-  gpuannTrainData trainData;
-
-  creategpuannTrainData(trainData, train);
-
-  (ann->first_layer->last_neuron - 1)->value = 1; ///bias input TODO!
-  creategpuann(data, ann);
-  loadgpuann(data, ann);
-
-  gpuann_fann_parallel_train_on_data(data, trainData, maxEpochs);
-
-  savegpuann(data, ann);
-
-  removegpuann(data);
-  removegpuannTrainData(trainData);
 }
