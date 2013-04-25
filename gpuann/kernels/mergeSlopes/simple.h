@@ -23,11 +23,14 @@ __global__ void gpuann_merge_slopes_gpu_kernel(unsigned int weightsCount, fann_t
       while(weightIndexInstance >= weightsCount)
       {
         sum[0] += slopesBegin[weightIndexInstance];
+        __syncthreads();
         sum[1] += slopesBegin[weightIndexInstance + blockSize];
+        __syncthreads();
         weightIndexInstance -= weightsCount;
       }
 
       slopesBegin[weightIndexInstance] += sum[0];
+      __syncthreads();
       slopesBegin[weightIndexInstance + blockSize] += sum[1];
     }
     else
@@ -35,6 +38,7 @@ __global__ void gpuann_merge_slopes_gpu_kernel(unsigned int weightsCount, fann_t
       while(weightIndexInstance >= weightsCount)
       {
         sum[0] += slopesBegin[weightIndexInstance];
+        __syncthreads();
         weightIndexInstance -= weightsCount;
       }
 
