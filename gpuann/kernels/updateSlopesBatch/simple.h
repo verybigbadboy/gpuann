@@ -17,7 +17,12 @@ __global__ void gpuann_fann_update_slopes_batch_gpu_kernel(unsigned int prevNeur
   unsigned int prevLayerNeuronIndex = tid;
   unsigned int neuronIndexInstanced = neuronIndex + instance * totalNeuronsCount;
 
-  fann_type error = trainErrors[neuronIndexInstanced];
+  __shared__ fann_type lerror;
+  if(tid == 0)
+    lerror = trainErrors[neuronIndexInstanced];
+  __syncthreads();
+
+  fann_type error = lerror; // trainErrors[neuronIndexInstanced];
   unsigned int prevLayerNeuronIndexInstanced;
   unsigned int slopesIndexInstanced;
 
@@ -28,6 +33,7 @@ __global__ void gpuann_fann_update_slopes_batch_gpu_kernel(unsigned int prevNeur
 
     neuronSlopes[slopesIndexInstanced] += error * prevValue[prevLayerNeuronIndexInstanced];
     prevLayerNeuronIndex += blockSize;
+    __syncthreads();
   }
 }
 
