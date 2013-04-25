@@ -64,7 +64,7 @@ void testOneEpochTrain(fann *ann, fann_train_data* train, unsigned int trainingA
 
 void testOneEpochParallelTrain(fann *ann, fann_train_data* train, unsigned int trainingAlgorithm, const std::string &header)
 {
-  unsigned int epochCountGPU = 10;
+  unsigned int epochCountGPU = 100;
   unsigned int epochCountCPU = 0;
   float timeGPU, timeCPU;
 
@@ -132,8 +132,8 @@ void testTrainMethods(fann *ann, fann_train_data* train)
   */
 
 
-  testOneEpochParallelTrain(ann, train, FANN_TRAIN_BATCH,       "Batch Train");
-  testOneEpochParallelTrain(ann, train, FANN_TRAIN_QUICKPROP,   "QuickProp Train");
-  testOneEpochParallelTrain(ann, train, FANN_TRAIN_RPROP,       "RProp Train");
+  //testOneEpochParallelTrain(ann, train, FANN_TRAIN_BATCH,       "Batch Train");
+  //testOneEpochParallelTrain(ann, train, FANN_TRAIN_QUICKPROP,   "QuickProp Train");
+  //testOneEpochParallelTrain(ann, train, FANN_TRAIN_RPROP,       "RProp Train");
   testOneEpochParallelTrain(ann, train, FANN_TRAIN_SARPROP,     "SarProp Train");
 }

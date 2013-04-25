@@ -136,9 +136,9 @@ void runTests(struct fann *ann, bool fullreport)
 void fulltest()
 {
   
-  for(int i = 1; i < 4; ++i)
+  for(int i = 2; i < 3; ++i)
   {
-    for(int j = 30; j < 1024; j *=2)
+    for(int j = 3000; j < 4000; j *=2)
     {
       printf("Neural network type: %d %d\n", i, j);
       fann *ann = createSpecificTrainedFann(i, j);
