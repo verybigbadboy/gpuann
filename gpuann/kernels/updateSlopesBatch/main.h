@@ -41,8 +41,9 @@ void gpuann_fann_update_slopes_batch_implementation(gpuann &data, fann_layer *la
     }
     else
     {
-      if(prevLayerSize > 256)
+      if(prevLayerSize > 1024 && 0)
       {
+        //tested with 4k, it works slower
         gpuann_fann_update_slopes_batch_big_neurons_implementation(prevLayerSize,
                                                                    layerSize,
                                                                    &(data.d_trainErrorsArray[layerNeuronShift]),
