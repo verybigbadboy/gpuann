@@ -220,7 +220,7 @@ void fann_backpropagate_MSE_select_implementation(unsigned int instanceCount,
   }
   else
   {
-    if(1)
+    if(neuronsCount > 256)
       fann_backpropagate_MSE_parallel_implementation(instanceCount,
                                                      prevActivationFunction,
                                                      prevNeuronsCount,
