@@ -65,7 +65,8 @@ void testOneEpochTrain(fann *ann, fann_train_data* train, unsigned int trainingA
 void testOneEpochParallelTrain(fann *ann, fann_train_data* train, unsigned int trainingAlgorithm, const std::string &header)
 {
   unsigned int epochCountGPU = 100;
-  unsigned int epochCountCPU = 0;
+  unsigned int epochCountCPU = 100;
+
   float timeGPU, timeCPU;
 
   printf("TEST: One Epoch Parallel %20s ", header.c_str());

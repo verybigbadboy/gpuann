@@ -211,8 +211,8 @@ break;
 
 //for neurons with < 32 inputs
 //always 32 threads, one input = one thread
-template <unsigned int blockSize, unsigned int layerActivationFunction>
-__global__ void gpuann_fann_run_multineuron_gpu_kernel(const unsigned int neuronInputCount,
+template <unsigned int blockSize, unsigned int layerActivationFunction, const unsigned int neuronInputCount>
+__global__ void gpuann_fann_run_multineuron_gpu_kernel(
                                                        const unsigned int neuronCount,
                                                        fann_type         *inputArray,
                                                        fann_type         *weightsArray,
@@ -296,7 +296,8 @@ __global__ void gpuann_fann_run_multineuron_gpu_kernel(const unsigned int neuron
   }
 }
 
-void gpuann_fann_run_small_neurons_implementation(unsigned int neuronInputCount,
+template <unsigned int neuronInputCount>
+void gpuann_fann_run_small_neurons_implementation_neuronInput(
                                                   fann_type * inputArray,
                                                   fann_type * weightsArray,
                                                   fann_type *sumArray,
@@ -321,7 +322,7 @@ void gpuann_fann_run_small_neurons_implementation(unsigned int neuronInputCount,
   dim3 dimGrid(blocksNeeded, instanceCount, 1); // TODO create bias if
 
 #define gpuann_fann_run_multineuron_gpu_kernelCase(X) case X: \
-gpuann_fann_run_multineuron_gpu_kernel <blockSize, X> <<<dimGrid, dimBlock>>>(neuronInputCount, neuronCount, inputArray, weightsArray, sumArray, outputArray, layerSteepness, totalNeuronsCount, totalWeightsCount); \
+  gpuann_fann_run_multineuron_gpu_kernel <blockSize, X, neuronInputCount> <<<dimGrid, dimBlock>>>(neuronCount, inputArray, weightsArray, sumArray, outputArray, layerSteepness, totalNeuronsCount, totalWeightsCount); \
 break;
 
   switch(layerActivationFunction)
@@ -342,6 +343,58 @@ break;
     gpuann_fann_run_multineuron_gpu_kernelCase(13);
     gpuann_fann_run_multineuron_gpu_kernelCase(14);
     gpuann_fann_run_multineuron_gpu_kernelCase(15);
+  }
+}
+
+void gpuann_fann_run_small_neurons_implementation(unsigned int neuronInputCount,
+  fann_type * inputArray,
+  fann_type * weightsArray,
+  fann_type *sumArray,
+  fann_type * outputArray,
+  fann_type layerSteepness,
+  unsigned int layerActivationFunction,
+  unsigned int neuronCount,
+  unsigned int instanceCount,
+  unsigned int totalNeuronsCount,
+  unsigned int totalWeightsCount)
+{
+  #define gpuann_fann_run_small_neurons_implementation_neuronInputCase(X) case X: \
+  gpuann_fann_run_small_neurons_implementation_neuronInput <X> (inputArray, weightsArray, sumArray, outputArray, layerSteepness, layerActivationFunction, neuronCount, instanceCount, totalNeuronsCount, totalWeightsCount); \
+  break;
+  
+  switch(neuronInputCount)
+  {
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(1);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(2);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(3);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(4);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(5);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(6);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(7);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(8);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(9);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(10);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(11);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(12);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(13);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(14);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(15);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(16);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(17);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(18);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(19);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(20);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(21);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(22);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(23);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(24);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(25);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(26);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(27);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(28);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(29);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(30);
+    gpuann_fann_run_small_neurons_implementation_neuronInputCase(31);
   }
 }
 
