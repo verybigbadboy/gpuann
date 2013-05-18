@@ -69,6 +69,11 @@ void update_weights(gpuann &data, gpuannTrainData &trainData)
 
 void gpuann_fann_parallel_train_epoch(gpuann &multidata, gpuann &data, gpuannTrainData &trainData)
 {
+  if(multidata._instanceCount < trainData._dataCount)
+  {
+    throw "TODO";
+  }
+
   gpuann_fann_train_parralel_update_slopes(multidata, data, trainData);
 
   update_weights(data, trainData);
