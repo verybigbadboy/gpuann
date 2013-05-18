@@ -3,9 +3,7 @@
 
 #include <fann.h>
 
-fann *createSpecificTrainedFann(unsigned int num_hiden_layers, unsigned int num_neurons_hidden_per_layer);
-bool runTest(struct fann *ann, fann_type * input);
-void runTests(struct fann *ann, bool fullreport = false);
+void testSpecificAnn(unsigned int hidenLayersCount, unsigned int neuronsPerLayer);
 void fulltest();
 
 #endif // TESTING_TESTING_H

@@ -1,5 +1,5 @@
-#ifndef TESTING_UTIL_H
-#define TESTING_UTIL_H
+#ifndef COMMON_UTIL_H
+#define COMMON_UTIL_H
 
 #include <fann.h>
 #include <string>
@@ -11,4 +11,4 @@ void printannsum(struct fann *ann);
 void printannvalue(struct fann *ann);
 void print2arrays(unsigned int size, fann_type *f, fann_type *s);
 
-#endif // TESTING_UTIL_H
+#endif // COMMON_UTIL_H

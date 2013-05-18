@@ -1,6 +1,6 @@
 
 #include <testing/train.h>
-#include <testing/util.h>
+#include <common/util.h>
 #include <base/gpuannDataCreator.h>
 #include <gpuann.h>
 #include <gpuannTrain.h>

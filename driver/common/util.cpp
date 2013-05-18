@@ -1,4 +1,4 @@
-#include <testing/util.h>
+#include <common/util.h>
 
 bool isAlmostSame(const fann_type& f1, const fann_type& f2)
 {

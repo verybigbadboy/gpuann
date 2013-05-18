@@ -7,8 +7,10 @@ link_directories(/home/bad/projects/fann-code/build/src/)
 
 link_libraries(floatfann gpuann)
 CUDA_ADD_EXECUTABLE(driver
-test.cpp
+main.cpp
 testing/testing.cpp
 testing/train.cpp
-testing/util.cpp
+testing/run.cpp
+common/util.cpp
+common/fannHelper.cpp
 )

@@ -1,7 +1,7 @@
 #include <common/cuda/common.h>
 #include <testing/testing.h>
 
-int main()
+int main(int argc, char** argv)
 {
   cudaDeviceInit();
 
