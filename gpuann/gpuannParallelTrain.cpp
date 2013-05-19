@@ -1,4 +1,5 @@
 #include <gpuannParallelTrain.h>
+#include <configuration.h>
 #include <base/gpuannDataCreator.h>
 
 #include <kernels/backpropagateMSE/backpropagateMSErun.h>
@@ -12,39 +13,13 @@
 #include <kernels/updateWeightsQuickprop/updateWeigthsQuickprop.h>
 #include <kernels/updateWeightsSarprop/updateWeightsSarprop.h>
 
-void gpuann_fann_train_parralel_multi_update_slopes(gpuann &multidata, gpuannTrainData &trainData)
-{
-  const fann *ann = multidata._fann;
-  
-  gpuann_fann_run_implementation(multidata);
-  gpuann_fann_compute_MSE_implementation_gpu(multidata, trainData.d_output);
-  gpuann_fann_backpropagate_MSE_implementation_gpu(multidata);
-  gpuann_fann_update_slopes_batch_implementation(multidata, ann->first_layer + 1, ann->last_layer - 1);
-}
-
-void gpuann_load_multidata(gpuann &multidata, gpuann &data, gpuannTrainData &trainData)
-{
-  unsigned int instanceCount = trainData._dataCount;
-
-  copygpuannWeightsToMultidata(multidata, data);
-  copygpuannInputsToMultidata(multidata, trainData.d_input);
-}
-
-void gpuann_fann_train_parralel_update_slopes(gpuann &multidata, gpuann &data, gpuannTrainData &trainData)
-{
-  gpuann_load_multidata(multidata, data, trainData);
-  gpuann_fann_train_parralel_multi_update_slopes(multidata, trainData);
-  gpuann_merge_slopes_implementation(multidata);
-  copygpuannSlopes(data, multidata);
-}
-
-void update_weights(gpuann &data, gpuannTrainData &trainData)
+void update_weights(gpuann &data, unsigned int trainDataCount)
 {
   switch (data._trainingAlgorithm)
   {
     case GPUANN_FANN_TRAIN_QUICKPROP:
     {
-      gpuann_fann_update_weights_quickprop_implementation(data, trainData._dataCount, 0, data._weightsCountPerInstance);
+      gpuann_fann_update_weights_quickprop_implementation(data, trainDataCount, 0, data._weightsCountPerInstance);
       break;
     }
     case GPUANN_FANN_TRAIN_RPROP:
@@ -54,7 +29,7 @@ void update_weights(gpuann &data, gpuannTrainData &trainData)
     }
     case GPUANN_FANN_TRAIN_BATCH:
     {
-      gpuann_fann_update_weights_batch_implementation(data, trainData._dataCount, 0, data._weightsCountPerInstance);
+      gpuann_fann_update_weights_batch_implementation(data, trainDataCount, 0, data._weightsCountPerInstance);
       break;
     }
     case GPUANN_FANN_TRAIN_SARPROP:
@@ -69,25 +44,45 @@ void update_weights(gpuann &data, gpuannTrainData &trainData)
 
 void gpuann_fann_parallel_train_epoch(gpuann &multidata, gpuann &data, gpuannTrainData &trainData)
 {
-  if(multidata._instanceCount < trainData._dataCount)
+  const fann *ann = multidata._fann;
+  unsigned int trainDataCount = trainData._dataCount;
+  unsigned int multidataSize = multidata._maxInstanceCount;
+
+  copygpuannWeightsToMultidata(multidata, data);
+
+  for(unsigned int trainDataIt = 0; trainDataIt < trainDataCount; trainDataIt += multidataSize)
   {
-    throw "TODO";
+    unsigned int dataCount = multidataSize;
+    if(dataCount > (trainDataCount - trainDataIt))
+      dataCount = trainDataCount - trainDataIt;
+
+    copygpuannInputsToMultidata(multidata, trainData.d_input, trainDataIt, dataCount);
+    multidata._instanceCount = dataCount;
+
+    gpuann_fann_run_implementation(multidata);
+    gpuann_fann_compute_MSE_implementation_gpu(multidata, trainData.d_output + trainData._outputCount * trainDataIt);
+    gpuann_fann_backpropagate_MSE_implementation_gpu(multidata);
+    gpuann_fann_update_slopes_batch_implementation(multidata, ann->first_layer + 1, ann->last_layer - 1);
   }
 
-  gpuann_fann_train_parralel_update_slopes(multidata, data, trainData);
-
-  update_weights(data, trainData);
+  multidata._instanceCount = multidata._maxInstanceCount;
+  gpuann_merge_slopes_implementation(multidata);
+  copygpuannSlopes(data, multidata);
+  update_weights(data, trainDataCount);
 }
 
 void gpuann_fann_parallel_train_on_data(gpuann &data, gpuannTrainData &trainData, unsigned int maxEpochs)
 {
-  unsigned int instanceCount = trainData._dataCount;
+  unsigned int trainDataCount = trainData._dataCount;
+  unsigned int instanceCount = trainDataCount;
   const fann *ann = data._fann;
 
   gpuann multidata;
+  if(trainDataCount > parallelTrainInstanceCountMax)
+    instanceCount = parallelTrainInstanceCountMax;
   creategpuann(multidata, ann, instanceCount);
 
-  copygpuannValuesToMultidata(multidata, data);
+  copygpuannValuesToMultidata(multidata, data); // biases values should be 1. TODO, optimize it.
 
   for(unsigned int i = 0; i < maxEpochs; ++i)
   {

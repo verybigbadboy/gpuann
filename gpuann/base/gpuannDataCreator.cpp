@@ -46,6 +46,7 @@ void creategpuann(gpuann& nn, const fann *ann, unsigned int instanceCount)
   nn.d_weightsArray = 0;
   nn._sarpropEpoch = 0;
   nn._instanceCount = instanceCount;
+  nn._maxInstanceCount = instanceCount;
   nn._trainingAlgorithm = ann->training_algorithm;
   nn._neuronsCountPerInstance = neuronCount;
   nn._weightsCountPerInstance = weightsCount;
@@ -129,12 +130,19 @@ void copygpuannWeightsToMultidata(gpuann& to, gpuann& from)
   gpuann_d2dMemcpyMulti(to.d_weightsArray, from.d_weightsArray, weightsCount, to._instanceCount, 0, weightsCount);
 }
 
-void copygpuannInputsToMultidata(gpuann& to, fann_type *d_inputs)
+void copygpuannInputsToMultidata(gpuann& to, fann_type *d_inputs, unsigned int from, unsigned int count)
 {
+  if(count == 0)
+    count = to._instanceCount;
+
+  if(to._instanceCount < count)
+    throw "wtf? ^^";
+
   const fann *ann = to._fann;
   unsigned int neuronCount = to._neuronsCountPerInstance;
+  unsigned int inputCount = ann->num_input;
 
-  gpuann_d2dMemcpyMulti(to.d_valuesArray, d_inputs, ann->num_input, to._instanceCount, ann->num_input, neuronCount);
+  gpuann_d2dMemcpyMulti(to.d_valuesArray, d_inputs + (from * inputCount), inputCount, count, inputCount, neuronCount);
 }
 
 void copygpuannSlopes(gpuann& to, gpuann& from, unsigned int fromInstance, unsigned int toInstance, unsigned int instanceCount)

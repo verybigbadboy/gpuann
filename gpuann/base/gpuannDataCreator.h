@@ -9,7 +9,7 @@ void copygpuann(gpuann& to, gpuann& from, unsigned int fromInstance = 0, unsigne
 
 void copygpuannValuesToMultidata(gpuann& to, gpuann& from);
 void copygpuannWeightsToMultidata(gpuann& to, gpuann& from);
-void copygpuannInputsToMultidata(gpuann& to, fann_type *d_inputs);
+void copygpuannInputsToMultidata(gpuann& to, fann_type *d_inputs, unsigned int from = 0, unsigned int count = 0);
 
 void copygpuannSlopes(gpuann& to, gpuann& from, unsigned int fromInstance = 0, unsigned int toInstance = 0, unsigned int instanceCount = 1);
 

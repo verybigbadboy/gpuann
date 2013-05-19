@@ -7,7 +7,8 @@
 struct gpuann
 {
   const fann * _fann;
-  unsigned int _instanceCount;
+  unsigned int _instanceCount; //current active instance count
+  unsigned int _maxInstanceCount; //allocated instance count
 
   //only for 1 instance
   fann_type *h_tmp_valuesArray;
