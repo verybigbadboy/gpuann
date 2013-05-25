@@ -8,6 +8,7 @@
 #include <kernels/updateSlopesBatch/simple.h>
 #include <kernels/updateSlopesBatch/multineuron.h>
 #include <kernels/updateSlopesBatch/bigNeuron.h>
+#include <configuration.h>
 
 
 void gpuann_fann_update_slopes_batch_implementation(gpuann &data, fann_layer *layerBegin, fann_layer *layerEnd)
@@ -28,7 +29,7 @@ void gpuann_fann_update_slopes_batch_implementation(gpuann &data, fann_layer *la
     unsigned int prevLayerNeuronShift = prevLayerFirstNeuron - firstNeuron;
     unsigned int prevLayerSize = prevLayer->last_neuron - prevLayerFirstNeuron;
 
-    if(prevLayerSize < 32)
+    if(prevLayerSize < 32 && updateSlopesBatchMultiNeuronImplementationEnabled)
     {
       gpuann_fann_update_slopes_batch_multineuron_implementation(prevLayerSize,
                                                                  layerSize,
@@ -41,7 +42,7 @@ void gpuann_fann_update_slopes_batch_implementation(gpuann &data, fann_layer *la
     }
     else
     {
-      if(prevLayerSize > 1024 && 0)
+      if(prevLayerSize > updateSlopesBatchMultiNeuronImplementationBeginCount && updateSlopesBatchBigNeuronImplementationEnabled)
       {
         //tested with 4k, it works slower
         gpuann_fann_update_slopes_batch_big_neurons_implementation(prevLayerSize,

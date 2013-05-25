@@ -4,7 +4,7 @@
 #include <common/math.h>
 #include <string>
 #include <base/gpuannData.h>
-
+#include <configuration.h>
 
 template <unsigned int blockSize, unsigned int layerActivationFunction>
 __global__ void gpuann_fann_run_gpu_kernel(const unsigned int neuronInputCount,
@@ -410,7 +410,7 @@ void gpuann_fann_run_select_best_implementation(unsigned int neuronInputCount,
                                                 unsigned int totalNeuronsCount,
                                                 unsigned int totalWeightsCount)
 {
-  if(neuronInputCount <= 32)
+  if(neuronInputCount <= 32 && straightforwardSmallNeuronImplementationEnabled)
   {
     gpuann_fann_run_small_neurons_implementation(neuronInputCount,
                                                  inputArray,

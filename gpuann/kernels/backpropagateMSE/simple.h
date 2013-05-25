@@ -6,6 +6,7 @@
 #include <base/derived.h>
 #include <string>
 
+#include <configuration.h>
 #include <kernels/backpropagateMSE/parallel.h>
 #include <kernels/backpropagateMSE/multiNeuron.h>
 
@@ -203,7 +204,7 @@ void fann_backpropagate_MSE_select_implementation(unsigned int instanceCount,
                                                   unsigned int totalNeuronsCount,
                                                   unsigned int totalWeightsCount)
 {
-  if(neuronsCount < 32)
+  if(neuronsCount < 32 && backpropationMultiNeuronImplementationEnabled)
   {
     fann_backpropagate_MSE_multineuron_implementation(instanceCount,
                                                       prevActivationFunction,
@@ -220,7 +221,7 @@ void fann_backpropagate_MSE_select_implementation(unsigned int instanceCount,
   }
   else
   {
-    if(neuronsCount > 256)
+    if(neuronsCount > backpropationParallelImplementationBeginCount && backpropationParallelImplementationEnabled)
       fann_backpropagate_MSE_parallel_implementation(instanceCount,
                                                      prevActivationFunction,
                                                      prevNeuronsCount,
