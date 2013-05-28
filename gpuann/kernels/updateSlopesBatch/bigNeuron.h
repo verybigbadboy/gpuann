@@ -50,6 +50,9 @@ break;
 
   if(threadCount > 256)
     threadCount = 256;
+  
+  if(!minimalThreadCountPerBlockOptimization)
+    threadCount = 256;
 
   dim3 dimBlock(threadCount, 1, 1);
   dim3 dimGrid(prevNeuronsCount / threadCount + 1, instanceCount, 1); // TODO create bias if

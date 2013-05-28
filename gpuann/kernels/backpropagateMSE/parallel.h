@@ -84,6 +84,9 @@ void fann_backpropagate_MSE_parallel_implementation(unsigned int instanceCount,
   if(threadsCount < 32)
     threadsCount = 32;
   
+  if(!minimalThreadCountPerBlockOptimization)
+    threadsCount = 256;
+  
   #define fann_backpropagate_MSE_parallel_activationFunction_case(X)   case X: \
   fann_backpropagate_MSE_parallel_activationFunction<X> (instanceCount, prevActivationFunction, prevNeuronsCount, neuronsCount, weights, trainErrors, prevTrainErrors, prevValue, prevSum, prevSteepness, totalNeuronsCount, totalWeightsCount); \
   break;

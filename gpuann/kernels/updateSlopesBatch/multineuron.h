@@ -37,6 +37,10 @@ void gpuann_fann_update_slopes_batch_multineuron_implementation(unsigned int pre
   unsigned int threadNeeded = pow2roundup((neuronsCount - 1) * prevNeuronsCount);
   if(threadNeeded > 256)
     threadNeeded = 256;
+
+  if(!minimalThreadCountPerBlockOptimization)
+    threadNeeded = 256;
+
   unsigned int neuronsPerBlock = threadNeeded / prevNeuronsCount;
   unsigned int blocksNeeded = (neuronsCount - 1) / neuronsPerBlock + 1;
   dim3 dimBlock(threadNeeded, 1, 1);

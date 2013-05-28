@@ -175,6 +175,9 @@ void fann_backpropagate_MSE_simple_implementation(unsigned int instanceCount,
   if(threadsCount < 32)
     threadsCount = 32;
 
+  if(!minimalThreadCountPerBlockOptimization)
+    threadsCount = 256;
+
   threadsCount /= 2;
 
 #define fann_backpropagate_MSE_gpu_kernel_activationFunction_case(X)   case X: \

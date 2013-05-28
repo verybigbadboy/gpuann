@@ -88,7 +88,7 @@ void fann_backpropagate_MSE_multineuron_implementation(unsigned int instanceCoun
                                                        unsigned int totalWeightsCount)
 {
   unsigned int threadNeeded = pow2roundup(neuronsCount * prevNeuronsCount);
-  if(threadNeeded > 256)
+  if(threadNeeded > 256 || !minimalThreadCountPerBlockOptimization)
     threadNeeded = 256;
   unsigned int prevNeuronsPerBlock = threadNeeded / neuronsCount;
   unsigned int blocksNeeded = prevNeuronsCount / prevNeuronsPerBlock + 1;

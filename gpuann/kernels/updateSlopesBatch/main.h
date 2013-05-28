@@ -5,10 +5,11 @@
 #include <common/math.h>
 #include <string>
 
+#include <configuration.h>
 #include <kernels/updateSlopesBatch/simple.h>
 #include <kernels/updateSlopesBatch/multineuron.h>
 #include <kernels/updateSlopesBatch/bigNeuron.h>
-#include <configuration.h>
+
 
 
 void gpuann_fann_update_slopes_batch_implementation(gpuann &data, fann_layer *layerBegin, fann_layer *layerEnd)

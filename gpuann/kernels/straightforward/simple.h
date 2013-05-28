@@ -193,6 +193,9 @@ void gpuann_fann_run_simple_implementation(unsigned int neuronInputCount,
   unsigned int threadsCount = pow2roundup(neuronInputCount) / 2;
   if(threadsCount < 32)
     threadsCount = 32;
+  
+  if(!minimalThreadCountPerBlockOptimization)
+    threadsCount = 256;
 
 #define gpuann_fann_run_gpu_kernel_activatedCase(X) case X: \
 gpuann_fann_run_gpu_kernel_activated <X> (neuronInputCount, inputArray, weightsArray, sumArray, outputArray, layerSteepness, layerActivationFunction, neuronCount, instanceCount, totalNeuronsCount, totalWeightsCount); \
@@ -313,6 +316,9 @@ void gpuann_fann_run_small_neurons_implementation_neuronInput(
   const unsigned int blockSize = 256; //just for shared memory;
   unsigned int threadNeeded = pow2roundup(neuronInputCount * neuronCount);
   if(threadNeeded > 256)
+    threadNeeded = 256;
+  
+  if(!minimalThreadCountPerBlockOptimization)
     threadNeeded = 256;
 
   const unsigned int neuronsPerBlock = threadNeeded / neuronInputCount;
