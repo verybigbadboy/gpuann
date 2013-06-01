@@ -25,6 +25,8 @@ void testSpecificAnn(unsigned int hidenLayersCount, unsigned int neuronsPerLayer
 
 void fulltest()
 {
+  printGPUANNConfig();
+
   for(int i = 1; i < 7; ++i)
   {
     for(int j = 30; j < 1024; j *=2)

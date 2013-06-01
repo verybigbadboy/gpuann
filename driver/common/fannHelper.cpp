@@ -1,4 +1,5 @@
 #include <common/fannHelper.h>
+#include <configuration.h>
 
 fann *createANN(unsigned int num_hiden_layers, unsigned int num_neurons_hidden_per_layer, bool trained)
 {
@@ -83,4 +84,44 @@ fann *createANN(unsigned int num_hiden_layers, unsigned int num_neurons_hidden_p
   fann_destroy_train(data);
   
   return ann;
+}
+
+void printGPUANNConfig()
+{
+  printf("Parallel instances : %d\n", parallelTrainInstanceCountMax);
+  printf("Backpropagation Multineuron ");
+  if(backpropationMultiNeuronImplementationEnabled)
+    printf("ENABLED\n");
+  else
+    printf("DISABLED\n");
+
+  printf("Backpropagation Parallel ");
+  if(backpropationParallelImplementationEnabled)
+    printf("ENABLED from %d\n", backpropationParallelImplementationBeginCount);
+  else
+    printf("DISABLED\n");
+
+  printf("Straighforward Smallneuron");
+  if(straightforwardSmallNeuronImplementationEnabled)
+    printf("ENABLED\n");
+  else
+    printf("DISABLED\n");
+
+  printf("Update Slopes Batch Multineuron ");
+  if(updateSlopesBatchMultiNeuronImplementationEnabled)
+    printf("ENABLED from %d\n", updateSlopesBatchMultiNeuronImplementationBeginCount);
+  else
+    printf("DISABLED\n");
+
+  printf("Update Slopes Bigneuron ");
+  if(updateSlopesBatchBigNeuronImplementationEnabled)
+    printf("ENABLED\n");
+  else
+    printf("DISABLED\n");
+
+  printf("Minimal thread per block ");
+  if(minimalThreadCountPerBlockOptimization)
+    printf("ENABLED\n");
+  else
+    printf("DISABLED\n");
 }

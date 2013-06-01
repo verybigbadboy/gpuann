@@ -5,4 +5,6 @@
 
 fann *createANN(unsigned int num_hiden_layers, unsigned int num_neurons_hidden_per_layer, bool trained);
 
+void printGPUANNConfig();
+
 #endif // COMMON_FANNHELPER_H
