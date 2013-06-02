@@ -10,6 +10,7 @@ CUDA_ADD_EXECUTABLE(driver
 main.cpp
 testing/testing.cpp
 testing/train.cpp
+testing/trainSpeed.cpp
 testing/run.cpp
 common/util.cpp
 common/fannHelper.cpp

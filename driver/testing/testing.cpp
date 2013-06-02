@@ -1,5 +1,6 @@
 #include <testing/testing.h>
 #include <testing/train.h>
+#include <testing/trainSpeed.h>
 #include <testing/run.h>
 #include <common/fannHelper.h>
 #include <gpuann.h>
@@ -15,6 +16,7 @@ void testSpecificAnn(unsigned int hidenLayersCount, unsigned int neuronsPerLayer
   {
     fann_train_data *data = fann_read_train_from_file("xor.data");
 
+    trainMethodsSpeedTest(ann, data);
     testTrainMethods(ann, data);
 
     fann_destroy_train(data);
